@@ -40,6 +40,9 @@ app.post('/render', async (req, res) => {
       serveUrl: bundleLocation,
       id: 'EEVideo',
       inputProps: { guion, audioUrl: audioUrl || '', titulo },
+      chromiumOptions: {
+        executablePath: '/usr/bin/chromium',
+      },
     });
 
     await renderMedia({
@@ -48,6 +51,9 @@ app.post('/render', async (req, res) => {
       codec: 'h264',
       outputLocation: outputPath,
       inputProps: { guion, audioUrl: audioUrl || '', titulo },
+      chromiumOptions: {
+        executablePath: '/usr/bin/chromium',
+      },
     });
 
     const fileBuffer = fs.readFileSync(outputPath);
