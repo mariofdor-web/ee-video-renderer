@@ -64,6 +64,19 @@ app.post('/render', async (req, res) => {
   }
 });
 
+app.get('/chrome-path', (req, res) => {
+  const { execSync } = require('child_process');
+  try {
+    const path1 = execSync('which chromium 2>/dev/null || echo "no"').toString().trim();
+    const path2 = execSync('which chromium-browser 2>/dev/null || echo "no"').toString().trim();
+    const path3 = execSync('which google-chrome 2>/dev/null || echo "no"').toString().trim();
+    const path4 = execSync('find /usr -name "chrom*" 2>/dev/null').toString().trim();
+    res.json({ chromium: path1, chromiumBrowser: path2, googleChrome: path3, find: path4 });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 8080;
