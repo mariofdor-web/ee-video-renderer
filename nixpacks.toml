@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["chromium", "ffmpeg"]
+nixPkgs = ["chromium", "ffmpeg", "nss", "nspr", "atk", "cups", "libdrm", "dbus", "libxkbcommon", "xorg.libX11", "xorg.libXcomposite", "xorg.libXdamage", "xorg.libXext", "xorg.libXfixes", "xorg.libXrandr", "mesa", "expat", "xorg.libxcb", "libxshmfence", "pango", "cairo", "alsa-lib"]
 
 [start]
 cmd = "node server.js"
