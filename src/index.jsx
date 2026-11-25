@@ -12,10 +12,10 @@ export const RemotionRoot = () => {
         fps={30}
         width={1080}
         height={1920}
-        defaultProps={{
-          guion: [],
-          audioUrl: '',
-          titulo: ''
+        defaultProps={{ guion: '', audioUrl: '', titulo: '', duracionSeg: 0 }}
+        calculateMetadata={({ props }) => {
+          const seg = Number(props.duracionSeg) || 0;
+          return seg > 0 ? { durationInFrames: Math.ceil((seg + 0.5) * 30) } : {};
         }}
       />
     </>
