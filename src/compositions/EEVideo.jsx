@@ -66,27 +66,91 @@ const Etiqueta = ({ frame, delay = 0, texto, color = C.verde }) => (
   </div>
 );
 
-// ─── ESCENA 1 — Gancho ────────────────────────────────────────────────────
-const Escena1Gancho = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+// ─── Ayudas para textos dinámicos ─────────────────────────────────────────
+const lineasDe = (t) => String(t || '').split('\n').map((l) => l.trim()).filter(Boolean);
 
-  const lineaW = interpolate(Math.max(0, frame - 5), [0, 25], [0, 900], {
+const tam = (texto, base, maxLetras) => {
+  const n = String(texto || '').length || 1;
+  return Math.round(base * Math.max(0.55, Math.min(1, maxLetras / n)));
+};
+
+const ConResaltado = ({ texto, resaltado, color }) => {
+  const t = String(texto || '');
+  const r = String(resaltado || '');
+  const i = r ? t.toLowerCase().indexOf(r.toLowerCase()) : -1;
+  if (i < 0) return <>{t}</>;
+  return (
+    <>
+      {t.slice(0, i)}
+      <span style={{ color }}>{t.slice(i, i + r.length)}</span>
+      {t.slice(i + r.length)}
+    </>
+  );
+};
+
+const contar = (frame, delay, valor, duracion = 35) => {
+  const v = Number(valor) || 0;
+  const p = interpolate(Math.max(0, frame - delay), [0, duracion], [0, 1], {
     extrapolateRight: 'clamp',
     easing: Easing.out(Easing.cubic),
   });
+  const dec = (String(valor).split('.')[1] || '').length;
+  return (v * p).toFixed(Math.min(dec, 1));
+};
 
+const ESCENAS_DEFECTO = {
+  gancho: { etiqueta: 'Especial', lineas: ['Imagina buscar', 'trabajo', 'sin poder mostrar', 'lo que sabes hacer.'] },
+  contexto: {
+    titulo: 'Personas con empleo en Colombia',
+    cifras: [
+      { valor: 2, total: 10, etiqueta: 'Con discapacidad' },
+      { valor: 6, total: 10, etiqueta: 'Sin discapacidad' },
+    ],
+    fuente: 'Fuente: DANE julio-septiembre 2026',
+  },
+  dato: {
+    titulo: 'Bogotá lanzó\nuna guía\npara contratar',
+    resaltado: 'una guía',
+    subtitulo: 'Secretaría de Desarrollo Económico de Bogotá',
+    pasos: [
+      { nombre: 'Antes', texto: 'Define funciones esenciales del cargo' },
+      { nombre: 'Durante', texto: 'Selecciona por habilidades reales' },
+      { nombre: 'Después', texto: 'Haz los ajustes necesarios' },
+    ],
+  },
+  impacto: {
+    titulo: 'Empresas vinculadas al programa en Bogotá',
+    numero: 731,
+    texto: 'Con incentivos económicos y acompañamiento de las cajas de compensación',
+    resaltado: 'cajas de compensación',
+  },
+  cierre: {
+    titulo: '¿Contratas personal?\nEncuentra el manual',
+    resaltado: 'Encuentra el manual',
+    subtitulo: 'Canales digitales oficiales de la Secretaría de Desarrollo Económico de Bogotá',
+  },
+};
+
+// ─── ESCENA 1 — Gancho ────────────────────────────────────────────────────
+const Escena1Gancho = ({ d }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const lineas = d.lineas && d.lineas.length ? d.lineas : lineasDe(d.texto);
+  const size = tam(lineas.join(' '), 96, 60);
+  const lineaW = interpolate(Math.max(0, frame - 5), [0, 25], [0, 900], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo, padding: '0 80px', justifyContent: 'center' }}>
       <div style={{ position: 'relative', zIndex: 10 }}>
-        <Etiqueta frame={frame} delay={0} texto="Especial" color={C.naranja} />
-        <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 96, lineHeight: 1.1, color: C.blanco, marginBottom: 48 }}>
-          <div style={fadeUp(frame, fps, 4)}>Imagina buscar</div>
-          <div style={{ color: C.verde, ...fadeUp(frame, fps, 12) }}>trabajo</div>
-          <div style={fadeUp(frame, fps, 20)}>sin poder mostrar</div>
-          <div style={{ display: 'inline-block', backgroundColor: C.naranja, color: C.fondo, padding: '0 16px', ...fadeUp(frame, fps, 28) }}>
-            lo que sabes hacer.
-          </div>
+        <Etiqueta frame={frame} delay={0} texto={d.etiqueta || 'Especial'} color={C.naranja} />
+        <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: size, lineHeight: 1.1, color: C.blanco, marginBottom: 48 }}>
+          {lineas.map((l, i) => {
+            const ultima = i === lineas.length - 1 && lineas.length > 1;
+            const verde = i === 1 && lineas.length > 2;
+            const estilo = ultima
+              ? { display: 'inline-block', backgroundColor: C.naranja, color: C.fondo, padding: '0 16px' }
+              : verde ? { color: C.verde } : {};
+            return <div key={i} style={{ ...estilo, ...fadeUp(frame, fps, 4 + i * 8) }}>{l}</div>;
+          })}
         </div>
         <div style={{ height: 4, width: lineaW, backgroundColor: C.verde, marginTop: 20 }} />
       </div>
@@ -96,102 +160,99 @@ const Escena1Gancho = () => {
 };
 
 // ─── ESCENA 2 — Contexto ──────────────────────────────────────────────────
-const Escena2Contexto = () => {
+const Escena2Contexto = ({ d }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
-  const val1 = countUp(frame, 20, 0, 2, 35);
-  const val2 = countUp(frame, 55, 0, 6, 35);
-  const bar1H = interpolate(Math.max(0, frame - 20), [0, 35], [0, 240], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
-  const bar2H = interpolate(Math.max(0, frame - 55), [0, 35], [0, 600], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
-
+  const cifras = (d.cifras || []).slice(0, 2);
+  const colores = [C.naranja, C.verde];
+  const maximo = Math.max(...cifras.map((c) => Number(c.total) || Number(c.valor) || 1), 1);
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo, padding: '140px 80px 100px' }}>
-      <Etiqueta frame={frame} delay={0} texto="Contexto" color={C.gris} />
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 700, fontSize: 44, color: C.gris, lineHeight: 1.3, marginBottom: 80, ...fadeIn(frame, 4) }}>
-        Personas con empleo en Colombia
+      <Etiqueta frame={frame} delay={0} texto={d.etiqueta || 'Contexto'} color={C.gris} />
+      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 700, fontSize: tam(d.titulo, 44, 60), color: C.gris, lineHeight: 1.3, marginBottom: 80, ...fadeIn(frame, 4) }}>
+        {d.titulo}
       </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 60, height: 680, paddingBottom: 80 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-          <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 140, color: C.naranja, lineHeight: 1, marginBottom: 16, ...fadeIn(frame, 20) }}>
-            {val1}<span style={{ fontSize: 60 }}>/10</span>
-          </div>
-          <div style={{ width: '100%', height: bar1H, backgroundColor: C.naranja, borderRadius: '8px 8px 0 0' }} />
-          <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 32, color: C.gris, textAlign: 'center', marginTop: 20, ...fadeIn(frame, 20) }}>
-            Con discapacidad
-          </div>
+      {cifras.length > 0 ? (
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 60, height: 680, paddingBottom: 80 }}>
+          {cifras.map((c, i) => {
+            const delay = 20 + i * 35;
+            const alto = interpolate(Math.max(0, frame - delay), [0, 35], [0, 600 * ((Number(c.valor) || 0) / maximo)], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
+            const sufijo = c.total ? `/${c.total}` : c.sufijo || '';
+            return (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: cifras.length === 1 ? 180 : 140, color: colores[i], lineHeight: 1, marginBottom: 16, ...fadeIn(frame, delay) }}>
+                  {contar(frame, delay, c.valor)}<span style={{ fontSize: 60 }}>{sufijo}</span>
+                </div>
+                <div style={{ width: '100%', height: alto, backgroundColor: colores[i], borderRadius: '8px 8px 0 0' }} />
+                <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 32, color: C.gris, textAlign: 'center', marginTop: 20, ...fadeIn(frame, delay) }}>{c.etiqueta}</div>
+              </div>
+            );
+          })}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-          <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 140, color: C.verde, lineHeight: 1, marginBottom: 16, ...fadeIn(frame, 55) }}>
-            {val2}<span style={{ fontSize: 60 }}>/10</span>
-          </div>
-          <div style={{ width: '100%', height: bar2H, backgroundColor: C.verde, borderRadius: '8px 8px 0 0' }} />
-          <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 32, color: C.gris, textAlign: 'center', marginTop: 20, ...fadeIn(frame, 55) }}>
-            Sin discapacidad
-          </div>
-        </div>
-      </div>
-      <div style={{ position: 'absolute', bottom: 90, left: 80, fontFamily: 'Arial, sans-serif', fontSize: 26, color: 'rgba(224,224,224,0.5)', ...fadeIn(frame, 80) }}>
-        Fuente: DANE julio-septiembre 2026
-      </div>
+      ) : (
+        <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: tam(d.texto, 72, 90), color: C.blanco, lineHeight: 1.2, ...fadeUp(frame, fps, 12) }}>{d.texto}</div>
+      )}
+      {d.fuente ? (
+        <div style={{ position: 'absolute', bottom: 90, left: 80, fontFamily: 'Arial, sans-serif', fontSize: 26, color: 'rgba(224,224,224,0.5)', ...fadeIn(frame, 80) }}>{d.fuente}</div>
+      ) : null}
       <MarcaFija />
     </AbsoluteFill>
   );
 };
 
 // ─── ESCENA 3 — Dato clave ────────────────────────────────────────────────
-const Escena3DatoClave = () => {
+const Escena3DatoClave = ({ d }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const pasos = ['ANTES', 'DURANTE', 'DESPUES'];
-  const textos = ['Define funciones esenciales del cargo', 'Selecciona por habilidades reales', 'Haz los ajustes necesarios'];
-
+  const pasos = (d.pasos || []).slice(0, 3);
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo, padding: '140px 80px 100px' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 12, backgroundColor: C.verde }} />
-      <Etiqueta frame={frame} delay={0} texto="Dato clave" color={C.verde} />
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 72, color: C.blanco, lineHeight: 1.1, marginBottom: 24, ...fadeUp(frame, fps, 6) }}>
-        Bogota lanzo<br /><span style={{ color: C.verde }}>una guia</span><br />para contratar
+      <Etiqueta frame={frame} delay={0} texto={d.etiqueta || 'Dato clave'} color={C.verde} />
+      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: tam(d.titulo, 72, 45), color: C.blanco, lineHeight: 1.1, marginBottom: 24, ...fadeUp(frame, fps, 6) }}>
+        {lineasDe(d.titulo).map((l, i) => <div key={i}><ConResaltado texto={l} resaltado={d.resaltado} color={C.verde} /></div>)}
       </div>
-      <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 38, color: C.gris, lineHeight: 1.4, marginBottom: 72, ...fadeIn(frame, 20) }}>
-        Secretaria de Desarrollo Economico de Bogota
-      </div>
-      <div style={{ display: 'flex', gap: 24 }}>
-        {pasos.map((paso, i) => (
-          <div key={paso} style={{ flex: 1, borderTop: `6px solid ${C.verde}`, paddingTop: 24, ...fadeUp(frame, fps, 30 + i * 15) }}>
-            <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 36, color: C.verde, letterSpacing: 4, marginBottom: 12 }}>{paso}</div>
-            <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 28, color: C.gris, lineHeight: 1.4 }}>{textos[i]}</div>
-          </div>
-        ))}
-      </div>
+      {d.subtitulo ? (
+        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 38, color: C.gris, lineHeight: 1.4, marginBottom: 72, ...fadeIn(frame, 20) }}>{d.subtitulo}</div>
+      ) : null}
+      {pasos.length > 0 ? (
+        <div style={{ display: 'flex', gap: 24 }}>
+          {pasos.map((p, i) => (
+            <div key={i} style={{ flex: 1, borderTop: `6px solid ${C.verde}`, paddingTop: 24, ...fadeUp(frame, fps, 30 + i * 15) }}>
+              <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 36, color: C.verde, letterSpacing: 4, marginBottom: 12, textTransform: 'uppercase' }}>{p.nombre}</div>
+              <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 28, color: C.gris, lineHeight: 1.4 }}>{p.texto}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <MarcaFija />
     </AbsoluteFill>
   );
 };
 
 // ─── ESCENA 4 — Impacto ───────────────────────────────────────────────────
-const Escena4Impacto = () => {
+const Escena4Impacto = ({ d }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const numero = countUp(frame, 25, 0, 731, 50);
+  const hayNumero = d.numero !== undefined && d.numero !== null && d.numero !== '';
   const s = spring({ frame: Math.max(0, frame - 20), fps, config: { damping: 14, stiffness: 100 } });
   const scaleVal = interpolate(s, [0, 1], [0.6, 1]);
   const opacityVal = interpolate(Math.max(0, frame - 20), [0, 6], [0, 1], { extrapolateRight: 'clamp' });
-
   const lineaW = interpolate(Math.max(0, frame - 70), [0, 20], [0, 200], { extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic) });
-
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo, padding: '140px 80px 100px' }}>
-      <Etiqueta frame={frame} delay={0} texto="Impacto" color={C.lima} />
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 400, fontSize: 44, color: C.gris, lineHeight: 1.3, marginBottom: 48, ...fadeIn(frame, 6) }}>
-        Empresas vinculadas al programa en Bogota
-      </div>
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 300, lineHeight: 0.9, color: C.lima, transform: `scale(${scaleVal})`, opacity: opacityVal, marginBottom: 24 }}>
-        {numero}
-      </div>
-      <div style={{ height: 6, width: lineaW, backgroundColor: C.lima, borderRadius: 3, marginBottom: 32 }} />
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 700, fontSize: 44, color: C.blanco, lineHeight: 1.3, ...fadeIn(frame, 72) }}>
-        Con incentivos economicos y acompanamiento de las <span style={{ color: C.lima }}>cajas de compensacion</span>
+      <Etiqueta frame={frame} delay={0} texto={d.etiqueta || 'Impacto'} color={C.lima} />
+      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 400, fontSize: tam(d.titulo, 44, 60), color: C.gris, lineHeight: 1.3, marginBottom: 48, ...fadeIn(frame, 6) }}>{d.titulo}</div>
+      {hayNumero ? (
+        <>
+          <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: tam(String(d.numero) + (d.sufijo || ''), 300, 4), lineHeight: 0.9, color: C.lima, transform: `scale(${scaleVal})`, opacity: opacityVal, marginBottom: 24 }}>
+            {contar(frame, 25, d.numero, 50)}{d.sufijo || ''}
+          </div>
+          <div style={{ height: 6, width: lineaW, backgroundColor: C.lima, borderRadius: 3, marginBottom: 32 }} />
+        </>
+      ) : null}
+      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 700, fontSize: tam(d.texto, hayNumero ? 44 : 64, hayNumero ? 90 : 110), color: C.blanco, lineHeight: 1.3, ...fadeIn(frame, hayNumero ? 72 : 20) }}>
+        <ConResaltado texto={d.texto} resaltado={d.resaltado} color={C.lima} />
       </div>
       <MarcaFija />
     </AbsoluteFill>
@@ -199,22 +260,19 @@ const Escena4Impacto = () => {
 };
 
 // ─── ESCENA 5 — Cierre ────────────────────────────────────────────────────
-const Escena5Cierre = () => {
+const Escena5Cierre = ({ d }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
   return (
     <AbsoluteFill style={{ backgroundColor: C.negro, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', padding: '80px' }}>
       <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle, rgba(184,242,89,0.08) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
-      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: 68, color: C.blanco, textAlign: 'center', lineHeight: 1.2, marginBottom: 60, zIndex: 10, ...fadeUp(frame, fps, 4) }}>
-        Contratas personal?<br /><span style={{ color: C.verde }}>Encuentra el manual</span>
+      <div style={{ fontFamily: 'Arial, sans-serif', fontWeight: 900, fontSize: tam(d.titulo, 68, 45), color: C.blanco, textAlign: 'center', lineHeight: 1.2, marginBottom: 60, zIndex: 10, ...fadeUp(frame, fps, 4) }}>
+        {lineasDe(d.titulo).map((l, i) => <div key={i}><ConResaltado texto={l} resaltado={d.resaltado} color={C.verde} /></div>)}
       </div>
-      <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 36, color: C.gris, textAlign: 'center', lineHeight: 1.5, marginBottom: 100, zIndex: 10, ...fadeIn(frame, 20) }}>
-        Canales digitales oficiales de la Secretaria de Desarrollo Economico de Bogota
-      </div>
-      <div style={{ zIndex: 10, ...fadeIn(frame, 30) }}>
-        <LogoEE size={120} />
-      </div>
+      {d.subtitulo ? (
+        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: 36, color: C.gris, textAlign: 'center', lineHeight: 1.5, marginBottom: 100, zIndex: 10, ...fadeIn(frame, 20) }}>{d.subtitulo}</div>
+      ) : null}
+      <div style={{ zIndex: 10, ...fadeIn(frame, 30) }}><LogoEE size={120} /></div>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 12, backgroundColor: C.rojo, ...fadeIn(frame, 10) }} />
     </AbsoluteFill>
   );
@@ -228,22 +286,36 @@ const Transicion = () => {
 };
 
 // ─── Componente principal ─────────────────────────────────────────────────
-export const EEVideo = ({ guion, audioUrl }) => {
-  const { durationInFrames } = useVideoConfig();
-  const k = durationInFrames / 900;
-  const S = (n) => Math.round(n * k);
+export const EEVideo = ({ audioUrl, escenas, tiempos }) => {
+  const { durationInFrames, fps } = useVideoConfig();
+  const e = escenas && typeof escenas === 'object' ? escenas : ESCENAS_DEFECTO;
+  const vacio = {};
+  let inicios;
+  const t = Array.isArray(tiempos) ? tiempos.map(Number) : [];
+  if (t.length === 5 && t.every((x) => !isNaN(x))) {
+    inicios = t.map((x) => Math.max(0, Math.round(x * fps)));
+    inicios[0] = 0;
+  } else {
+    const k = durationInFrames / 900;
+    inicios = [0, 160, 380, 580, 780].map((n) => Math.round(n * k));
+  }
+  const fin = (i) => (i < 4 ? inicios[i + 1] + 5 : durationInFrames) - inicios[i];
+  const escenasLista = [
+    <Escena1Gancho d={e.gancho || vacio} />,
+    <Escena2Contexto d={e.contexto || vacio} />,
+    <Escena3DatoClave d={e.dato || vacio} />,
+    <Escena4Impacto d={e.impacto || vacio} />,
+    <Escena5Cierre d={e.cierre || vacio} />,
+  ];
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo }}>
       {audioUrl && <Audio src={audioUrl} />}
-      <Sequence from={0} durationInFrames={S(165)}><Escena1Gancho /></Sequence>
-      <Sequence from={S(160) - 15} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={S(160)} durationInFrames={S(225)}><Escena2Contexto /></Sequence>
-      <Sequence from={S(380) - 15} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={S(380)} durationInFrames={S(195)}><Escena3DatoClave /></Sequence>
-      <Sequence from={S(580) - 15} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={S(580)} durationInFrames={S(195)}><Escena4Impacto /></Sequence>
-      <Sequence from={S(780) - 15} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={S(780)} durationInFrames={durationInFrames - S(780)}><Escena5Cierre /></Sequence>
+      {escenasLista.map((esc, i) => (
+        <Sequence key={`e${i}`} from={inicios[i]} durationInFrames={Math.max(1, fin(i))}>{esc}</Sequence>
+      ))}
+      {[1, 2, 3, 4].map((i) => (
+        <Sequence key={`t${i}`} from={Math.max(0, inicios[i] - 12)} durationInFrames={25}><Transicion /></Sequence>
+      ))}
     </AbsoluteFill>
   );
 };
