@@ -28,8 +28,16 @@ async function getBundled() {
 }
 
 app.post('/render', async (req, res) => {
-  const { guion, audioUrl, titulo, duracionSeg } = req.body;
-  const props = { guion, audioUrl: audioUrl || '', titulo, duracionSeg: Number(duracionSeg) || 0 };
+  const { guion, audioUrl, titulo, duracionSeg, escenas, tiempos } = req.body;
+  const props = {
+    guion,
+    audioUrl: audioUrl || '',
+    titulo,
+    duracionSeg: Number(duracionSeg) || 0,
+    escenas: escenas && typeof escenas === 'object' ? escenas : null,
+    tiempos: Array.isArray(tiempos) ? tiempos.map(Number) : [],
+  };
+
 
   if (!guion || !titulo) {
     return res.status(400).json({ error: 'Faltan campos: guion, titulo' });
