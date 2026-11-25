@@ -1,8 +1,14 @@
-const express = require('express');
-const { bundle } = require('@remotion/bundler');
-const { renderMedia, selectComposition } = require('@remotion/renderer');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import { bundle } from '@remotion/bundler';
+import { renderMedia, selectComposition } from '@remotion/renderer';
+import { createRequire } from 'module';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -64,20 +70,17 @@ app.post('/render', async (req, res) => {
   }
 });
 
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
 app.get('/chrome-path', (req, res) => {
   const { execSync } = require('child_process');
   try {
     const path1 = execSync('which chromium 2>/dev/null || echo "no"').toString().trim();
-    const path2 = execSync('which chromium-browser 2>/dev/null || echo "no"').toString().trim();
-    const path3 = execSync('which google-chrome 2>/dev/null || echo "no"').toString().trim();
-    const path4 = execSync('find /usr -name "chrom*" 2>/dev/null').toString().trim();
-    res.json({ chromium: path1, chromiumBrowser: path2, googleChrome: path3, find: path4 });
+    res.json({ chromium: path1 });
   } catch(e) {
     res.json({ error: e.message });
   }
 });
-
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
