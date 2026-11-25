@@ -229,18 +229,22 @@ const Transicion = () => {
 
 // ─── Componente principal ─────────────────────────────────────────────────
 export const EEVideo = ({ guion, audioUrl }) => {
+  const { durationInFrames } = useVideoConfig();
+  const k = durationInFrames / 900;
+  const S = (n) => Math.round(n * k);
   return (
     <AbsoluteFill style={{ backgroundColor: C.fondo }}>
       {audioUrl && <Audio src={audioUrl} />}
-      <Sequence from={0} durationInFrames={165}><Escena1Gancho /></Sequence>
-      <Sequence from={145} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={160} durationInFrames={225}><Escena2Contexto /></Sequence>
-      <Sequence from={365} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={380} durationInFrames={195}><Escena3DatoClave /></Sequence>
-      <Sequence from={565} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={580} durationInFrames={195}><Escena4Impacto /></Sequence>
-      <Sequence from={765} durationInFrames={25}><Transicion /></Sequence>
-      <Sequence from={780} durationInFrames={120}><Escena5Cierre /></Sequence>
+      <Sequence from={0} durationInFrames={S(165)}><Escena1Gancho /></Sequence>
+      <Sequence from={S(160) - 15} durationInFrames={25}><Transicion /></Sequence>
+      <Sequence from={S(160)} durationInFrames={S(225)}><Escena2Contexto /></Sequence>
+      <Sequence from={S(380) - 15} durationInFrames={25}><Transicion /></Sequence>
+      <Sequence from={S(380)} durationInFrames={S(195)}><Escena3DatoClave /></Sequence>
+      <Sequence from={S(580) - 15} durationInFrames={25}><Transicion /></Sequence>
+      <Sequence from={S(580)} durationInFrames={S(195)}><Escena4Impacto /></Sequence>
+      <Sequence from={S(780) - 15} durationInFrames={25}><Transicion /></Sequence>
+      <Sequence from={S(780)} durationInFrames={durationInFrames - S(780)}><Escena5Cierre /></Sequence>
     </AbsoluteFill>
   );
 };
+
