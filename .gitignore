@@ -2,3 +2,4 @@ node_modules/
 output/
 src/data.json
 .env
+*.mp4
