@@ -28,7 +28,8 @@ async function getBundled() {
 }
 
 app.post('/render', async (req, res) => {
-  const { guion, audioUrl, titulo } = req.body;
+  const { guion, audioUrl, titulo, duracionSeg } = req.body;
+  const props = { guion, audioUrl: audioUrl || '', titulo, duracionSeg: Number(duracionSeg) || 0 };
 
   if (!guion || !titulo) {
     return res.status(400).json({ error: 'Faltan campos: guion, titulo' });
@@ -45,7 +46,7 @@ app.post('/render', async (req, res) => {
     const composition = await selectComposition({
       serveUrl: bundleLocation,
       id: 'EEVideo',
-      inputProps: { guion, audioUrl: audioUrl || '', titulo },
+      inputProps: props,
       browserExecutable: '/usr/bin/chromium',
     });
 
@@ -54,7 +55,7 @@ app.post('/render', async (req, res) => {
       serveUrl: bundleLocation,
       codec: 'h264',
       outputLocation: outputPath,
-      inputProps: { guion, audioUrl: audioUrl || '', titulo },
+      inputProps: props,
       browserExecutable: '/usr/bin/chromium',
     });
 
