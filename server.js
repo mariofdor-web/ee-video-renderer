@@ -13,6 +13,9 @@ const require = createRequire(import.meta.url);
 const app = express();
 app.use(express.json({ limit: '20mb' }));
 
+// Servir archivos de audio temporales por HTTP
+app.use('/audio', express.static(path.join(__dirname, 'output')));
+
 let bundled = null;
 
 async function getBundled() {
@@ -42,16 +45,17 @@ app.post('/render', async (req, res) => {
   const outputPath = path.join(__dirname, 'output', `${slug}.mp4`);
   if (!fs.existsSync('output')) fs.mkdirSync('output');
 
-  // Si llega base64, escribirlo a disco y usar ruta local
+  // Si llega base64, escribirlo a disco y servirlo por HTTP local
   let audioSrc = audioUrl || '';
   let tempAudioPath = null;
+  const audioFileName = `${slug}-audio.mp3`;
 
   if (audioBase64) {
-    tempAudioPath = path.join(__dirname, 'output', `${slug}-audio.mp3`);
+    tempAudioPath = path.join(__dirname, 'output', audioFileName);
     const base64Data = audioBase64.replace(/^data:audio\/\w+;base64,/, '');
     fs.writeFileSync(tempAudioPath, Buffer.from(base64Data, 'base64'));
-    audioSrc = `file://${tempAudioPath}`;
-    console.log('Audio escrito a disco:', tempAudioPath);
+    audioSrc = `http://localhost:${process.env.PORT || 8080}/audio/${audioFileName}`;
+    console.log('Audio escrito a disco, sirviendo en:', audioSrc);
   }
 
   const props = {
@@ -94,7 +98,6 @@ app.post('/render', async (req, res) => {
     }
   } catch (err) {
     console.error(err);
-    // Limpiar en caso de error también
     if (tempAudioPath && fs.existsSync(tempAudioPath)) {
       fs.unlinkSync(tempAudioPath);
     }
