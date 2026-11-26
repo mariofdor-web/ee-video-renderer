@@ -12,12 +12,14 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@remotion/bundler": "^4.0.547",
-    "@remotion/cli": "^4.0.547",
-    "@remotion/google-fonts": "^4.0.547",
-    "@remotion/lambda": "^4.0.547",
-    "@remotion/renderer": "^4.0.547",
-    "express": "^5.3.0",
-    "remotion": "^4.0.547"
+  "@remotion/bundler": "^4.0.547",
+  "@remotion/cli": "^4.0.547",
+  "@remotion/google-fonts": "^4.0.547",
+  "@remotion/lambda": "^4.0.547",
+  "@remotion/lottie": "^4.0.547",
+  "@remotion/renderer": "^4.0.547",
+  "express": "^5.3.0",
+  "remotion": "^4.0.547",
+  "three": "^0.169.0"
   }
 }
