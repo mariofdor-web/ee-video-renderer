@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
 const app = express();
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
 
 let bundled = null;
 
@@ -28,25 +28,40 @@ async function getBundled() {
 }
 
 app.post('/render', async (req, res) => {
-  const { guion, audioUrl, titulo, duracionSeg, escenas, tiempos } = req.body;
-  const props = {
-    guion,
-    audioUrl: audioUrl || '',
-    titulo,
-    duracionSeg: Number(duracionSeg) || 0,
-    escenas: escenas && typeof escenas === 'object' ? escenas : null,
-    tiempos: Array.isArray(tiempos) ? tiempos.map(Number) : [],
-  };
-
+  const { guion, audioUrl, audioBase64, titulo, duracionSeg, escenas, tiempos } = req.body;
 
   if (!guion || !titulo) {
     return res.status(400).json({ error: 'Faltan campos: guion, titulo' });
   }
 
+  if (!audioUrl && !audioBase64) {
+    return res.status(400).json({ error: 'Falta audio: envía audioUrl o audioBase64' });
+  }
+
   const slug = titulo.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 30);
   const outputPath = path.join(__dirname, 'output', `${slug}.mp4`);
-
   if (!fs.existsSync('output')) fs.mkdirSync('output');
+
+  // Si llega base64, escribirlo a disco y usar ruta local
+  let audioSrc = audioUrl || '';
+  let tempAudioPath = null;
+
+  if (audioBase64) {
+    tempAudioPath = path.join(__dirname, 'output', `${slug}-audio.mp3`);
+    const base64Data = audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+    fs.writeFileSync(tempAudioPath, Buffer.from(base64Data, 'base64'));
+    audioSrc = `file://${tempAudioPath}`;
+    console.log('Audio escrito a disco:', tempAudioPath);
+  }
+
+  const props = {
+    guion,
+    audioUrl: audioSrc,
+    titulo,
+    duracionSeg: Number(duracionSeg) || 0,
+    escenas: escenas && typeof escenas === 'object' ? escenas : null,
+    tiempos: Array.isArray(tiempos) ? tiempos.map(Number) : [],
+  };
 
   try {
     const bundleLocation = await getBundled();
@@ -72,9 +87,17 @@ app.post('/render', async (req, res) => {
     res.set('Content-Disposition', `attachment; filename="${slug}.mp4"`);
     res.send(fileBuffer);
 
+    // Limpiar archivos temporales
     fs.unlinkSync(outputPath);
+    if (tempAudioPath && fs.existsSync(tempAudioPath)) {
+      fs.unlinkSync(tempAudioPath);
+    }
   } catch (err) {
     console.error(err);
+    // Limpiar en caso de error también
+    if (tempAudioPath && fs.existsSync(tempAudioPath)) {
+      fs.unlinkSync(tempAudioPath);
+    }
     res.status(500).json({ error: 'Error al renderizar', detalle: err.message });
   }
 });
