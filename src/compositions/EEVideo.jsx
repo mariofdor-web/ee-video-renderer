@@ -127,7 +127,7 @@ const Capa = ({ svg, f, fps, dur, i }) => {
 
 // ─── Cámara cinematográfica ───────────────────────────────────────────────
 const Camara = ({ tipo, f, fps, dur, children }) => {
-  const p = interpolate(f,[0,Math.max(1,dur)],[0,1],EO(Easing.inOut(Easing.sine)));
+  const p = interpolate(f,[0,Math.max(1,dur)],[0,1],EO(Easing.inOut(Easing.cubic)));
   const s1 = spr(f, fps, 0, {damping:40,stiffness:30});
   let sc=1, tx=0, ty=0, r=0;
   switch(tipo) {
