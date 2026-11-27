@@ -138,4 +138,10 @@ app.get('/chrome-path', (req, res) => {
 });
 
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
+  console.log('R2_ACCESS_KEY_ID presente:', !!process.env.R2_ACCESS_KEY_ID);
+  console.log('R2_SECRET_ACCESS_KEY presente:', !!process.env.R2_SECRET_ACCESS_KEY);
+  console.log('R2_ENDPOINT presente:', !!process.env.R2_ENDPOINT);
+  console.log('R2_ACCESS_KEY_ID longitud:', (process.env.R2_ACCESS_KEY_ID || '').length);
+});
