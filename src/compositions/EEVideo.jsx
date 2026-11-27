@@ -226,13 +226,12 @@ const TITULO = { fontFamily: ROBOTO, fontWeight: 900, color: C.blanco, lineHeigh
 const Gancho = ({ d, f, fps, dur }) => {
   const lineas = (Array.isArray(d.lineas) ? d.lineas : String(d.texto || '').split('\n')).filter(Boolean).slice(0, 3);
   const acento = d.color_acento || C.naranja;
-  const flash = interpolate(f, [0, 3, 12], [0.55, 0.55, 0], CL);
-  const sacudida = f < 14 ? Math.sin(f * 2.2) * interpolate(f, [0, 14], [10, 0], CL) : 0;
+  const flash = 0; // flash eliminado
+  const sacudida = f < 8 ? Math.sin(f * 2.2) * interpolate(f, [0, 8], [4, 0], CL) : 0;
   return (
     <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro, transform: `translateX(${sacudida}px)` }}>
       <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="alejar" />
       <BloqueTexto>
-        <Etiqueta f={f - 8} texto={d.etiqueta || 'Especial'} color={acento} />
         {lineas.map((l, i) => {
           const ultima = i === lineas.length - 1 && lineas.length > 1;
           return (
@@ -249,7 +248,7 @@ const Gancho = ({ d, f, fps, dur }) => {
           );
         })}
       </BloqueTexto>
-      <AbsoluteFill style={{ backgroundColor: acento, opacity: flash, zIndex: 30, mixBlendMode: 'screen' }} />
+
       <Marca f={f} />
     </AbsoluteFill>
   );
@@ -262,7 +261,6 @@ const Contexto = ({ d, f, fps, dur }) => {
     <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
       <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-arriba" />
       <BloqueTexto>
-        <Etiqueta f={f - 4} texto={d.etiqueta || 'Contexto'} color={C.gris} />
         <div style={{ ...entra(f, fps, 8), ...TITULO, fontSize: 68, marginBottom: 36 }}>{d.titulo}</div>
         {cifras.length ? (
           <div style={{ display: 'flex', gap: 50 }}>
@@ -290,7 +288,6 @@ const Dato = ({ d, f, fps, dur }) => {
     <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
       <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="acercar" />
       <BloqueTexto>
-        <Etiqueta f={f - 4} texto={d.etiqueta || 'Dato clave'} color={C.verde} />
         <div style={{ ...entra(f, fps, 8), ...TITULO, fontSize: 84, marginBottom: 30 }}>
           {String(d.titulo || '').split('\n').map((l, i) => (
             <div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde} /></div>
@@ -317,7 +314,6 @@ const Impacto = ({ d, f, fps, dur }) => {
     <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
       <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="acercar" />
       <BloqueTexto>
-        <Etiqueta f={f - 4} texto={d.etiqueta || 'Impacto'} color={C.lima} />
         {d.titulo ? <div style={{ ...entra(f, fps, 6), fontFamily: ROBOTO, fontWeight: 700, fontSize: 46, color: C.gris, marginBottom: 10 }}>{d.titulo}</div> : null}
         {hay ? (
           <div style={{
