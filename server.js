@@ -25,7 +25,7 @@ const r2 = new S3Client({
 });
 
 const BUCKET = 'ee-videos-audio';
-const R2_PUBLIC_URL = process.env.R2_ENDPOINT.replace('https://', 'https://pub-').split('.r2.')[0] + '.r2.dev';
+// URL de R2 hardcodeada
 
 let bundled = null;
 
@@ -73,7 +73,7 @@ app.post('/render', async (req, res) => {
     }));
 
     // URL pública del objeto en R2
-    audioSrc = `${process.env.R2_ENDPOINT}/${BUCKET}/${audioKey}`;
+    audioSrc = `https://977c3e3b7229b8720247c05d4d636436.r2.cloudflarestorage.com/${BUCKET}/${audioKey}`;
     console.log('Audio en R2:', audioSrc);
   }
 
