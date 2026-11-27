@@ -13,9 +13,6 @@ const require = createRequire(import.meta.url);
 const app = express();
 app.use(express.json({ limit: '20mb' }));
 
-// Servir archivos de audio temporales por HTTP
-app.use('/audio', express.static(path.join(__dirname, 'output')));
-
 let bundled = null;
 
 async function getBundled() {
@@ -42,20 +39,15 @@ app.post('/render', async (req, res) => {
   }
 
   const slug = titulo.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 30);
-  const outputPath = path.join(__dirname, 'output', `${slug}.mp4`);
   if (!fs.existsSync('output')) fs.mkdirSync('output');
+  const outputPath = path.join(__dirname, 'output', `${slug}.mp4`);
 
-  // Si llega base64, escribirlo a disco y servirlo por HTTP local
+  // Convertir base64 a data URI directamente — Remotion lo acepta
   let audioSrc = audioUrl || '';
-  let tempAudioPath = null;
-  const audioFileName = `${slug}-audio.mp3`;
-
   if (audioBase64) {
-    tempAudioPath = path.join(__dirname, 'output', audioFileName);
     const base64Data = audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-    fs.writeFileSync(tempAudioPath, Buffer.from(base64Data, 'base64'));
-    audioSrc = `http://localhost:${process.env.PORT || 8080}/audio/${audioFileName}`;
-    console.log('Audio escrito a disco, sirviendo en:', audioSrc);
+    audioSrc = `data:audio/mpeg;base64,${base64Data}`;
+    console.log('Audio convertido a data URI, longitud:', audioSrc.length);
   }
 
   const props = {
@@ -91,16 +83,9 @@ app.post('/render', async (req, res) => {
     res.set('Content-Disposition', `attachment; filename="${slug}.mp4"`);
     res.send(fileBuffer);
 
-    // Limpiar archivos temporales
     fs.unlinkSync(outputPath);
-    if (tempAudioPath && fs.existsSync(tempAudioPath)) {
-      fs.unlinkSync(tempAudioPath);
-    }
   } catch (err) {
     console.error(err);
-    if (tempAudioPath && fs.existsSync(tempAudioPath)) {
-      fs.unlinkSync(tempAudioPath);
-    }
     res.status(500).json({ error: 'Error al renderizar', detalle: err.message });
   }
 });
