@@ -2,6 +2,7 @@ import express from 'express';
 import { bundle } from '@remotion/bundler';
 import { renderMedia, selectComposition } from '@remotion/renderer';
 import { createRequire } from 'module';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,6 +13,19 @@ const require = createRequire(import.meta.url);
 
 const app = express();
 app.use(express.json({ limit: '20mb' }));
+
+// Cliente R2
+const r2 = new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+});
+
+const BUCKET = 'ee-videos-audio';
+const R2_PUBLIC_URL = process.env.R2_ENDPOINT.replace('https://', 'https://pub-').split('.r2.')[0] + '.r2.dev';
 
 let bundled = null;
 
@@ -42,12 +56,25 @@ app.post('/render', async (req, res) => {
   if (!fs.existsSync('output')) fs.mkdirSync('output');
   const outputPath = path.join(__dirname, 'output', `${slug}.mp4`);
 
-  // Convertir base64 a data URI directamente — Remotion lo acepta
   let audioSrc = audioUrl || '';
+  let audioKey = null;
+
   if (audioBase64) {
     const base64Data = audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-    audioSrc = `data:audio/mpeg;base64,${base64Data}`;
-    console.log('Audio convertido a data URI, longitud:', audioSrc.length);
+    const audioBuffer = Buffer.from(base64Data, 'base64');
+    audioKey = `${slug}-${Date.now()}.mp3`;
+
+    console.log('Subiendo audio a R2...');
+    await r2.send(new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: audioKey,
+      Body: audioBuffer,
+      ContentType: 'audio/mpeg',
+    }));
+
+    // URL pública del objeto en R2
+    audioSrc = `${process.env.R2_ENDPOINT}/${BUCKET}/${audioKey}`;
+    console.log('Audio en R2:', audioSrc);
   }
 
   const props = {
@@ -83,9 +110,17 @@ app.post('/render', async (req, res) => {
     res.set('Content-Disposition', `attachment; filename="${slug}.mp4"`);
     res.send(fileBuffer);
 
+    // Limpiar
     fs.unlinkSync(outputPath);
+    if (audioKey) {
+      await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: audioKey }));
+      console.log('Audio eliminado de R2');
+    }
   } catch (err) {
     console.error(err);
+    if (audioKey) {
+      await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: audioKey })).catch(() => {});
+    }
     res.status(500).json({ error: 'Error al renderizar', detalle: err.message });
   }
 });
