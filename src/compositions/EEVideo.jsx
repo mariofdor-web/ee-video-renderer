@@ -1,6 +1,6 @@
 import {
   AbsoluteFill, Audio, useCurrentFrame, useVideoConfig,
-  interpolate, spring, Sequence, Easing,
+  interpolate, spring, Sequence, Easing, random,
 } from 'remotion';
 import { loadFont as loadRoboto } from '@remotion/google-fonts/Roboto';
 import { loadFont as loadCondensed } from '@remotion/google-fonts/RobotoCondensed';
@@ -15,6 +15,68 @@ const spr = (f, fps, delay=0, cfg={damping:12,stiffness:60}) =>
   spring({ frame: Math.max(0, f-delay), fps, config: cfg });
 
 const LOGO_B64 = 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxzdmcgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NCA0NC4xIj4NCjxwYXRoIGZpbGw9IiMxNDE0MTQiIGQ9Ik0yMC4zLDQzLjhjMCwwLjItMC4xLDAuMy0wLjQsMC4zSDAuNEMwLjEsNDQuMSwwLDQ0LDAsNDMuOGMwLTAuMiwwLjEtMC4yLDAuNC0wLjJoMS44YzAuMywwLDAuNS0wLjcsMC41LTJWMTEuN2MwLTEuMy0wLjItMi0wLjUtMkgwLjRDMC4xLDkuNywwLDkuNywwLDkuNWMwLTAuMiwwLjEtMC4zLDAuNC0wLjNoMThjMC4zLDAsMC40LDAuMSwwLjQsMC4zdjEwLjZjMCwwLjMtMC4xLDAuNC0wLjQsMC40Yy0wLjIsMC0wLjMtMC4xLTAuMy0wLjR2LTAuN2MwLjEtMi4zLTAuNS00LjUtMS41LTYuNWMtMC45LTEuOS0yLjktMy4xLTUtMy4xSDguNEM4LjEsOS44LDgsOS45LDgsMTB2MTUuM2MwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMS43YzEuMSwwLDIuMi0wLjYsMi44LTEuNmMwLjgtMSwxLjItMi4zLDEuMS0zLjZ2LTAuNWMwLTAuMiwwLjEtMC40LDAuMy0wLjRjMC4yLDAsMC4zLDAuMSwwLjMsMC40djExLjljMCwwLjMtMC4xLDAuNC0wLjMsMC40Yy0wLjIsMC0wLjQtMC4xLTAuNC0wLjN2LTAuNmMwLTEuMy0wLjQtMi42LTEuMS0zLjdjLTAuNi0xLTEuNi0xLjYtMi44LTEuNkg4LjRjLTAuMywwLTAuNSwwLjEtMC41LDAuM3YxNi45YzAsMC4yLDAuMSwwLjIsMC40LDAuMmgyLjljMi44LDAuMSw1LjUtMS40LDYuOC00YzEtMS45LDEuNi00LDEuNS02LjF2LTAuNmMwLTAuMywwLjEtMC40LDAuNC0wLjRzMC40LDAuMSwwLjQsMC40TDIwLjMsNDMuOHoiLz4NCjxwYXRoIGZpbGw9IiMxNDE0MTQiIGQ9Ik00NCw0My44YzAsMC4yLTAuMSwwLjMtMC40LDAuM0gyNGMtMC4zLDAtMC40LTAuMS0wLjQtMC4zYzAtMC4yLDAuMS0wLjIsMC40LTAuMmgxLjhjMC4zLDAsMC41LTAuNywwLjUtMlYxMS43YzAtMS4zLTAuMi0yLTAuNS0ySDI0Yy0wLjMsMC0wLjQtMC4xLTAuNC0wLjJjMC0wLjIsMC4xLTAuMywwLjQtMC4zaDE4YzAuMywwLDAuNCwwLjEsMC40LDAuM3YxMC42YzAsMC4zLTAuMSwwLjQtMC40LDAuNGMtMC4yLDAtMC4zLTAuMS0wLjMtMC40di0wLjdjMC4xLTIuMy0wLjUtNC41LTEuNS02LjVjLTAuOS0xLjktMi45LTMuMS01LTMuMWgtMy4xYy0wLjMsMC0wLjUsMC4xLTAuNSwwLjJ2MTUuM2MwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMS43YzEuMSwwLDIuMi0wLjYsMi44LTEuNmMwLjgtMSwxLjItMi4zLDEuMS0zLjZ2LTAuNWMwLTAuMiwwLjEtMC40LDAuMy0wLjRjMC4yLDAsMC4zLDAuMSwwLjMsMC40djExLjljMCwwLjMtMC4xLDAuNC0wLjMsMC40Yy0wLjIsMC0wLjQtMC4xLTAuNC0wLjN2LTAuNmMwLTEuMy0wLjQtMi42LTEuMS0zLjdjLTAuNi0xLTEuNi0xLjYtMi44LTEuNmgtMS43Yy0wLjMsMC0wLjUsMC4xLTAuNSwwLjN2MTYuOWMwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMi45YzIuOCwwLjEsNS41LTEuNCw2LjgtNGMxLTEuOSwxLjYtNCwxLjUtNi4xdi0wLjZjMC0wLjMsMC4xLTAuNCwwLjQtMC40czAuNCwwLjEsMC40LDAuNEw0NCw0My44eiIvPg0KPHJlY3QgZmlsbD0iI0VBMEEwQSIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjUuNiIvPg0KPC9zdmc+DQo=';
+
+// ─── Utilidades de color ──────────────────────────────────────────────────
+const hexRgb = (h) => {
+  const s = String(h||'#000000').replace('#','');
+  const v = s.length===3 ? s.split('').map(c=>c+c).join('') : s.padEnd(6,'0').slice(0,6);
+  return [0,2,4].map(k=>parseInt(v.slice(k,k+2),16)||0);
+};
+const mezclar = (a, b, t) => {
+  const A=hexRgb(a), B=hexRgb(b);
+  return '#'+A.map((x,k)=>Math.round(x+(B[k]-x)*t).toString(16).padStart(2,'0')).join('');
+};
+const alfa = (h, a) => { const [r,g,b]=hexRgb(h); return `rgba(${r},${g},${b},${a})`; };
+
+// ─── Biblioteca de recursos SVG compartidos ───────────────────────────────
+// Definidos una sola vez en el documento. Las capas de Claude los usan con url(#ee_...).
+const VOLUMENES = { verde:C.verde, naranja:C.naranja, lima:C.lima, rojo:C.rojo, blanco:C.blanco, gris:'#6a6a6a', oscuro:'#3a3a3a' };
+const LUCES = { verde:C.verde, naranja:C.naranja, lima:C.lima, rojo:C.rojo, blanco:C.blanco };
+const REGION = { x:'-40%', y:'-40%', width:'180%', height:'180%' };
+
+const Defs = () => (
+  // No usar display:none: Chromium no resuelve gradientes de un SVG oculto así.
+  <svg width="0" height="0" aria-hidden="true" style={{ position:'absolute', width:0, height:0, overflow:'hidden' }}>
+    <defs>
+      {Object.entries(VOLUMENES).map(([k,c]) => (
+        <linearGradient key={`v-${k}`} id={`ee_vol_${k}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={mezclar(c,'#ffffff',0.35)}/>
+          <stop offset="0.45" stopColor={c}/>
+          <stop offset="1" stopColor={mezclar(c,'#000000',0.62)}/>
+        </linearGradient>
+      ))}
+      {Object.entries(LUCES).map(([k,c]) => (
+        <radialGradient key={`l-${k}`} id={`ee_luz_${k}`} cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stopColor={c} stopOpacity="0.9"/>
+          <stop offset="0.4" stopColor={c} stopOpacity="0.35"/>
+          <stop offset="1" stopColor={c} stopOpacity="0"/>
+        </radialGradient>
+      ))}
+      <linearGradient id="ee_brillo" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#ffffff" stopOpacity="0.7"/>
+        <stop offset="1" stopColor="#ffffff" stopOpacity="0"/>
+      </linearGradient>
+      <radialGradient id="ee_sombra_suelo" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stopColor="#000000" stopOpacity="0.65"/>
+        <stop offset="1" stopColor="#000000" stopOpacity="0"/>
+      </radialGradient>
+      <filter id="ee_sombra" {...REGION}>
+        <feDropShadow dx="0" dy="18" stdDeviation="18" floodColor="#000000" floodOpacity="0.55"/>
+      </filter>
+      <filter id="ee_desenfoque" {...REGION}>
+        <feGaussianBlur stdDeviation="6"/>
+      </filter>
+      <filter id="ee_glow" {...REGION}>
+        <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="ee_glow_fuerte" {...REGION}>
+        <feGaussianBlur in="SourceGraphic" stdDeviation="24" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+  </svg>
+);
 
 // ─── Movimiento por capa ──────────────────────────────────────────────────
 const mover = (tipo, f, fps, dur, i) => {
@@ -110,25 +172,71 @@ const mover = (tipo, f, fps, dur, i) => {
 const leer = (svg, attr, def) => { const m=String(svg||'').match(new RegExp(attr+'="([^"]*)"')); return m?m[1]:def; };
 const capasDe = d => Array.isArray(d.capas)&&d.capas.length ? d.capas : d.svg ? [d.svg] : [];
 
+// Claude ahora manda solo un <g>; la raíz la pone el motor. Las capas viejas con <svg> siguen funcionando.
+const RAIZ = '<svg viewBox="0 0 1080 1920" width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">';
+const envolver = (s) => /^\s*<svg/i.test(s) ? s : `${RAIZ}${s}</svg>`;
+
+const LIENZO = { position:'absolute', left:0, top:0, width:1080, height:1920 };
+
 const Capa = ({ svg, f, fps, dur, i }) => {
-  const tipo = leer(svg,'data-anim', i===0?'fondo':'principal');
+  const tipo = leer(svg,'data-anim','principal');
   const origen = leer(svg,'data-origen','540 960').split(/\s+/).map(Number);
   const a = mover(tipo, f, fps, dur, i);
   return (
-    <div style={{
-      position:'absolute', left:0, top:0, width:1080, height:1920,
-      transform:`translate(${a.tx}px,${a.ty}px) rotate(${a.r}deg) scale(${a.sc})`,
-      transformOrigin:`${origen[0]||540}px ${origen[1]||960}px`,
-      opacity: a.op,
-      '--p': a.trazo,
-    }} dangerouslySetInnerHTML={{ __html: svg }} />
+    <div
+      className={tipo==='trazar' ? 'capa-trazar' : undefined}
+      style={{
+        ...LIENZO,
+        transform:`translate(${a.tx}px,${a.ty}px) rotate(${a.r}deg) scale(${a.sc})`,
+        transformOrigin:`${origen[0]||540}px ${origen[1]||960}px`,
+        opacity: a.op,
+        '--p': a.trazo,
+      }}
+      dangerouslySetInnerHTML={{ __html: envolver(svg) }}
+    />
   );
+};
+
+// ─── Capas generadas por código ───────────────────────────────────────────
+const FondoCodigo = ({ fondo, acento, f, fps, dur }) => {
+  const a = mover('fondo', f, fps, dur, 0);
+  return (
+    <div style={{
+      ...LIENZO,
+      transform:`translate(${a.tx}px,${a.ty}px) scale(${a.sc})`,
+      transformOrigin:'540px 960px',
+      background:[
+        `radial-gradient(ellipse 75% 42% at 50% 30%, ${alfa(acento,0.28)} 0%, ${alfa(acento,0.08)} 45%, transparent 75%)`,
+        `radial-gradient(ellipse 60% 30% at 15% 85%, ${alfa(acento,0.06)} 0%, transparent 70%)`,
+        `linear-gradient(180deg, ${mezclar(fondo,'#ffffff',0.07)} 0%, ${fondo} 55%, #000000 100%)`,
+      ].join(','),
+    }}/>
+  );
+};
+
+const ParticulasCodigo = ({ acento, semilla, f, n=36 }) => {
+  const op = interpolate(f,[0,12],[0,1],CL);
+  const puntos = Array.from({ length:n }, (_,k) => {
+    const rnd = (t) => random(`${semilla}-${t}-${k}`);
+    const vel = 0.6 + rnd('v')*1.6;
+    const radio = 1.5 + rnd('r')*4;
+    const fase = rnd('f')*Math.PI*2;
+    const y = (((rnd('y')*1920 - f*vel) % 1920) + 1920) % 1920;
+    const x = rnd('x')*1080 + Math.sin(f*0.03+fase)*18;
+    const brillo = 0.35 + 0.65*(Math.sin(f*0.09+fase)*0.5+0.5);
+    return (
+      <circle key={k} cx={x} cy={y} r={radio}
+        fill={rnd('c')<0.3 ? C.blanco : acento}
+        opacity={brillo*0.8}
+        filter={radio>4.2 ? 'url(#ee_glow)' : undefined}/>
+    );
+  });
+  return <svg viewBox="0 0 1080 1920" width="1080" height="1920" style={{ ...LIENZO, opacity:op }}>{puntos}</svg>;
 };
 
 // ─── Cámara cinematográfica ───────────────────────────────────────────────
 const Camara = ({ tipo, f, fps, dur, children }) => {
   const p = interpolate(f,[0,Math.max(1,dur)],[0,1],EO(Easing.inOut(Easing.cubic)));
-  const s1 = spr(f, fps, 0, {damping:40,stiffness:30});
   let sc=1, tx=0, ty=0, r=0;
   switch(tipo) {
     case 'alejar':
@@ -173,12 +281,51 @@ const Camara = ({ tipo, f, fps, dur, children }) => {
   );
 };
 
-const Ilustracion = ({ d, f, fps, dur, camaraDef='acercar' }) => {
+const ACENTO_DEF = { gancho:C.naranja, contexto:C.verde, dato:C.verde, impacto:C.lima, cierre:C.verde };
+
+// Orden fijo: fondo (código) → capas de Claude → partículas (código).
+// Aunque Claude falle, la escena conserva fondo y atmósfera.
+const Ilustracion = ({ d, f, fps, dur, clave, camaraDef='acercar' }) => {
   const capas = capasDe(d);
-  if (!capas.length) return null;
+  const acento = d.color_acento || ACENTO_DEF[clave] || C.verde;
   return (
     <Camara tipo={d.camara||camaraDef} f={f} fps={fps} dur={dur}>
-      {capas.map((svg,i) => <Capa key={i} svg={svg} f={f} fps={fps} dur={dur} i={i} />)}
+      <FondoCodigo fondo={d.color_fondo||C.negro} acento={acento} f={f} fps={fps} dur={dur}/>
+      {capas.map((svg,i) => <Capa key={i} svg={svg} f={f} fps={fps} dur={dur} i={i+1}/>)}
+      <ParticulasCodigo acento={acento} semilla={clave} f={f}/>
+    </Camara>
+  );
+};
+
+// ─── Ilustración fija del cierre (marca, no la genera Claude) ─────────────
+const CierreVisual = ({ f, fps, dur }) => {
+  const rayos = interpolate(f,[8,60],[0,1],EO(Easing.out(Easing.cubic)));
+  const latido = 1 + Math.sin(f*0.08)*0.06;
+  return (
+    <Camara tipo="zoom-reverso" f={f} fps={fps} dur={dur}>
+      <FondoCodigo fondo={C.negro} acento={C.verde} f={f} fps={fps} dur={dur}/>
+      <svg viewBox="0 0 1080 1920" width="1080" height="1920" style={LIENZO}>
+        {Array.from({ length:18 }, (_,k) => {
+          const ang = (k/18)*Math.PI*2 + f*0.0025;
+          const ini = 170, fin = 170 + 1000*rayos;
+          return (
+            <line key={`r${k}`}
+              x1={540+Math.cos(ang)*ini} y1={860+Math.sin(ang)*ini}
+              x2={540+Math.cos(ang)*fin} y2={860+Math.sin(ang)*fin}
+              stroke={k%3===0 ? C.lima : C.verde} strokeWidth={k%3===0 ? 3 : 1.5} opacity={0.22}/>
+          );
+        })}
+        {Array.from({ length:5 }, (_,k) => {
+          const t = ((f*0.7 + k*52) % 260) / 260;
+          return (
+            <circle key={`o${k}`} cx={540} cy={860} r={120 + t*900}
+              fill="none" stroke={C.verde} strokeWidth={3 - t*2.2} opacity={(1-t)*0.5}/>
+          );
+        })}
+        <circle cx={540} cy={860} r={260*latido} fill="url(#ee_luz_verde)" opacity={0.55}/>
+        <circle cx={540} cy={860} r={70*latido} fill="none" stroke={C.verde} strokeWidth={4} filter="url(#ee_glow)" opacity={interpolate(f,[0,20],[0,0.9],CL)}/>
+      </svg>
+      <ParticulasCodigo acento={C.verde} semilla="cierre" f={f} n={50}/>
     </Camara>
   );
 };
@@ -247,7 +394,7 @@ const Gancho = ({ d, f, fps, dur }) => {
   const sacudida=f<10?Math.sin(f*2.4)*interpolate(f,[0,10],[8,0],CL):0;
   return (
     <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro, transform:`translateX(${sacudida}px)` }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="alejar"/>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} clave="gancho" camaraDef="alejar"/>
       <BloqueTexto>
         {lineas.map((l,i) => {
           const ultima=i===lineas.length-1&&lineas.length>1;
@@ -282,7 +429,7 @@ const Contexto = ({ d, f, fps, dur }) => {
   const cols=[C.naranja,C.verde];
   return (
     <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-arriba"/>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} clave="contexto" camaraDef="paneo-arriba"/>
       <BloqueTexto>
         <div style={{...entra(f,fps,6), ...TITULO, fontSize:66, marginBottom:32}}>{d.titulo}</div>
         {cifras.length?(
@@ -311,7 +458,7 @@ const Dato = ({ d, f, fps, dur }) => {
   return (
     <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro }}>
       <div style={{position:'absolute',left:0,top:0,bottom:0,width:7,background:`linear-gradient(180deg,${C.verde},${C.verde}00)`,opacity:interpolate(f,[0,18],[0,1],CL)}}/>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-diagonal"/>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} clave="dato" camaraDef="paneo-diagonal"/>
       <BloqueTexto>
         <div style={{...entra(f,fps,6),...TITULO,fontSize:86,marginBottom:28}}>
           {String(d.titulo||'').split('\n').map((l,i)=><div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde}/></div>)}
@@ -344,7 +491,7 @@ const Impacto = ({ d, f, fps, dur }) => {
           opacity:interpolate(f,[10,30],[0,1],CL),
         }}/>
       )}
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="orbita"/>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} clave="impacto" camaraDef="orbita"/>
       <BloqueTexto>
         {d.titulo?<div style={{...entra(f,fps,4),fontFamily:ROBOTO,fontWeight:700,fontSize:46,color:C.gris,marginBottom:12}}>{d.titulo}</div>:null}
         {hay?(
@@ -371,7 +518,7 @@ const Impacto = ({ d, f, fps, dur }) => {
 
 const Cierre = ({ d, f, fps, dur }) => (
   <AbsoluteFill style={{ backgroundColor:C.negro }}>
-    <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="zoom-reverso"/>
+    <CierreVisual f={f} fps={fps} dur={dur}/>
     <AbsoluteFill style={{background:'radial-gradient(ellipse at 50% 55%,rgba(10,10,10,0.3) 0%,rgba(10,10,10,0.88) 70%)',zIndex:5}}/>
     <AbsoluteFill style={{zIndex:10,alignItems:'center',justifyContent:'center',padding:'300px 110px 350px',textAlign:'center'}}>
       <div style={{...entra(f,fps,4),...TITULO,fontSize:94,marginBottom:80}}>
@@ -428,6 +575,7 @@ export const EEVideo = ({ audioUrl, escenas, tiempos }) => {
   return (
     <AbsoluteFill style={{backgroundColor:C.negro,fontFamily:ROBOTO}}>
       <style>{ESTILOS}</style>
+      <Defs/>
       {audioUrl?<Audio src={audioUrl}/>:null}
       {comps.map((Comp,i)=>(
         <Sequence key={`e${i}`} from={inicios[i]} durationInFrames={Math.max(1,dur(i))}>
