@@ -73,7 +73,7 @@ app.post('/render', async (req, res) => {
     }));
 
     // URL pública del objeto en R2
-    audioSrc = `https://977c3e3b7229b8720247c05d4d636436.r2.cloudflarestorage.com/${BUCKET}/${audioKey}`;
+    audioSrc = `https://pub-23f19a61958d4d0f9b21dfbf21caf071.r2.dev/${audioKey}`;
     console.log('Audio en R2:', audioSrc);
   }
 
