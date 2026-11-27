@@ -1,416 +1,444 @@
 import {
-  AbsoluteFill,
-  Audio,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-  Sequence,
-  Easing,
+  AbsoluteFill, Audio, useCurrentFrame, useVideoConfig,
+  interpolate, spring, Sequence, Easing,
 } from 'remotion';
 import { loadFont as loadRoboto } from '@remotion/google-fonts/Roboto';
 import { loadFont as loadCondensed } from '@remotion/google-fonts/RobotoCondensed';
 
-const { fontFamily: ROBOTO } = loadRoboto('normal', { weights: ['300', '400', '700', '900'], subsets: ['latin'] });
-const { fontFamily: CONDENSED } = loadCondensed('normal', { weights: ['700', '900'], subsets: ['latin'] });
+const { fontFamily: ROBOTO } = loadRoboto('normal', { weights: ['300','400','700','900'], subsets: ['latin'] });
+const { fontFamily: CONDENSED } = loadCondensed('normal', { weights: ['700','900'], subsets: ['latin'] });
 
-const C = {
-  negro: '#0a0a0a',
-  verde: '#B8F259',
-  lima: '#E1FD6D',
-  naranja: '#FE883C',
-  gris: '#E0E0E0',
-  blanco: '#FFFFFF',
-  rojo: '#EA0A0A',
-};
-
-const CL = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' };
+const C = { negro:'#0a0a0a', verde:'#B8F259', lima:'#E1FD6D', naranja:'#FE883C', gris:'#E0E0E0', blanco:'#FFFFFF', rojo:'#EA0A0A' };
+const CL = { extrapolateLeft:'clamp', extrapolateRight:'clamp' };
+const EO = (e) => ({ ...CL, easing: e });
+const spr = (f, fps, delay=0, cfg={damping:12,stiffness:60}) =>
+  spring({ frame: Math.max(0, f-delay), fps, config: cfg });
 
 const LOGO_B64 = 'PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxzdmcgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0NCA0NC4xIj4NCjxwYXRoIGZpbGw9IiMxNDE0MTQiIGQ9Ik0yMC4zLDQzLjhjMCwwLjItMC4xLDAuMy0wLjQsMC4zSDAuNEMwLjEsNDQuMSwwLDQ0LDAsNDMuOGMwLTAuMiwwLjEtMC4yLDAuNC0wLjJoMS44YzAuMywwLDAuNS0wLjcsMC41LTJWMTEuN2MwLTEuMy0wLjItMi0wLjUtMkgwLjRDMC4xLDkuNywwLDkuNywwLDkuNWMwLTAuMiwwLjEtMC4zLDAuNC0wLjNoMThjMC4zLDAsMC40LDAuMSwwLjQsMC4zdjEwLjZjMCwwLjMtMC4xLDAuNC0wLjQsMC40Yy0wLjIsMC0wLjMtMC4xLTAuMy0wLjR2LTAuN2MwLjEtMi4zLTAuNS00LjUtMS41LTYuNWMtMC45LTEuOS0yLjktMy4xLTUtMy4xSDguNEM4LjEsOS44LDgsOS45LDgsMTB2MTUuM2MwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMS43YzEuMSwwLDIuMi0wLjYsMi44LTEuNmMwLjgtMSwxLjItMi4zLDEuMS0zLjZ2LTAuNWMwLTAuMiwwLjEtMC40LDAuMy0wLjRjMC4yLDAsMC4zLDAuMSwwLjMsMC40djExLjljMCwwLjMtMC4xLDAuNC0wLjMsMC40Yy0wLjIsMC0wLjQtMC4xLTAuNC0wLjN2LTAuNmMwLTEuMy0wLjQtMi42LTEuMS0zLjdjLTAuNi0xLTEuNi0xLjYtMi44LTEuNkg4LjRjLTAuMywwLTAuNSwwLjEtMC41LDAuM3YxNi45YzAsMC4yLDAuMSwwLjIsMC40LDAuMmgyLjljMi44LDAuMSw1LjUtMS40LDYuOC00YzEtMS45LDEuNi00LDEuNS02LjF2LTAuNmMwLTAuMywwLjEtMC40LDAuNC0wLjRzMC40LDAuMSwwLjQsMC40TDIwLjMsNDMuOHoiLz4NCjxwYXRoIGZpbGw9IiMxNDE0MTQiIGQ9Ik00NCw0My44YzAsMC4yLTAuMSwwLjMtMC40LDAuM0gyNGMtMC4zLDAtMC40LTAuMS0wLjQtMC4zYzAtMC4yLDAuMS0wLjIsMC40LTAuMmgxLjhjMC4zLDAsMC41LTAuNywwLjUtMlYxMS43YzAtMS4zLTAuMi0yLTAuNS0ySDI0Yy0wLjMsMC0wLjQtMC4xLTAuNC0wLjJjMC0wLjIsMC4xLTAuMywwLjQtMC4zaDE4YzAuMywwLDAuNCwwLjEsMC40LDAuM3YxMC42YzAsMC4zLTAuMSwwLjQtMC40LDAuNGMtMC4yLDAtMC4zLTAuMS0wLjMtMC40di0wLjdjMC4xLTIuMy0wLjUtNC41LTEuNS02LjVjLTAuOS0xLjktMi45LTMuMS01LTMuMWgtMy4xYy0wLjMsMC0wLjUsMC4xLTAuNSwwLjJ2MTUuM2MwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMS43YzEuMSwwLDIuMi0wLjYsMi44LTEuNmMwLjgtMSwxLjItMi4zLDEuMS0zLjZ2LTAuNWMwLTAuMiwwLjEtMC40LDAuMy0wLjRjMC4yLDAsMC4zLDAuMSwwLjMsMC40djExLjljMCwwLjMtMC4xLDAuNC0wLjMsMC40Yy0wLjIsMC0wLjQtMC4xLTAuNC0wLjN2LTAuNmMwLTEuMy0wLjQtMi42LTEuMS0zLjdjLTAuNi0xLTEuNi0xLjYtMi44LTEuNmgtMS43Yy0wLjMsMC0wLjUsMC4xLTAuNSwwLjN2MTYuOWMwLDAuMiwwLjEsMC4yLDAuNCwwLjJoMi45YzIuOCwwLjEsNS41LTEuNCw2LjgtNGMxLTEuOSwxLjYtNCwxLjUtNi4xdi0wLjZjMC0wLjMsMC4xLTAuNCwwLjQtMC40czAuNCwwLjEsMC40LDAuNEw0NCw0My44eiIvPg0KPHJlY3QgZmlsbD0iI0VBMEEwQSIgd2lkdGg9IjQ0IiBoZWlnaHQ9IjUuNiIvPg0KPC9zdmc+DQo=';
 
-// ─── Lectura de capas ──────────────────────────────────────────────────────
-const leerAttr = (svg, nombre, def) => {
-  const m = String(svg || '').match(new RegExp(nombre + '="([^"]*)"'));
-  return m ? m[1] : def;
-};
+// ─── Movimiento por capa ──────────────────────────────────────────────────
+const mover = (tipo, f, fps, dur, i) => {
+  const delay = i * 6;
+  const s1 = spr(f, fps, delay);
+  const p = interpolate(f, [0, Math.max(1,dur)], [0,1], CL);
+  let tx=0, ty=0, sc=1, r=0, op=interpolate(f-delay,[0,10],[0,1],CL), trazo=1;
 
-const capasDe = (d) => {
-  if (Array.isArray(d.capas) && d.capas.length) return d.capas;
-  if (d.svg) return [d.svg];
-  return [];
-};
-
-// ─── Movimiento por capa (determinista, función del frame) ────────────────
-const animar = (tipo, f, fps, dur, i) => {
-  const retraso = i * 5;
-  const ent = spring({ frame: Math.max(0, f - retraso), fps, config: { damping: 15, stiffness: 70 } });
-  const p = interpolate(f, [0, Math.max(1, dur)], [0, 1], CL);
-  let tx = 0, ty = 0, s = 1, r = 0;
-  let op = interpolate(f - retraso, [0, 10], [0, 1], CL);
-  let trazo = 1;
-
-  switch (tipo) {
+  switch(tipo) {
     case 'fondo':
-      op = 1;
-      s = interpolate(p, [0, 1], [1.12, 1.0]);
-      ty = interpolate(p, [0, 1], [20, -40]);
+      op=1; sc=interpolate(p,[0,1],[1.18,1.0]); ty=interpolate(p,[0,1],[30,-60]);
+      break;
+    case 'fondo-lateral':
+      op=1; sc=interpolate(p,[0,1],[1.12,1.0]); tx=interpolate(p,[0,1],[-40,40]);
       break;
     case 'medio':
-      s = interpolate(p, [0, 1], [1.15, 1.02]);
-      ty = interpolate(p, [0, 1], [60, -90]);
-      tx = interpolate(p, [0, 1], [-20, 20]);
+      sc=interpolate(p,[0,1],[1.2,1.04]); ty=interpolate(p,[0,1],[80,-120]); tx=interpolate(p,[0,1],[-30,30]);
       break;
     case 'principal':
-      s = interpolate(ent, [0, 1], [0.78, 1]) * interpolate(p, [0, 1], [1, 1.06]);
-      ty = interpolate(ent, [0, 1], [160, 0]) + Math.sin(f * 0.045) * 10;
+      sc=interpolate(s1,[0,1],[0.72,1]) * interpolate(p,[0,1],[1,1.08]);
+      ty=interpolate(s1,[0,1],[200,0]) + Math.sin(f*0.04)*12;
       break;
     case 'zoom-golpe':
-      s = interpolate(ent, [0, 1], [1.7, 1]);
+      sc=interpolate(s1,[0,1],[1.9,1]) * interpolate(p,[0,1],[1,1.06]);
+      op=interpolate(f-delay,[0,4],[0,1],CL);
+      break;
+    case 'revelacion':
+      sc=interpolate(s1,[0,1],[0.5,1]);
+      op=interpolate(f-delay,[0,8],[0,1],CL);
+      ty=interpolate(s1,[0,1],[120,0]);
       break;
     case 'flotar':
-      ty = Math.sin(f * 0.06 + i * 1.7) * 22;
-      tx = Math.cos(f * 0.045 + i) * 10;
+      ty=Math.sin(f*0.055+i*2.1)*26; tx=Math.cos(f*0.038+i)*14;
+      break;
+    case 'flotar-lento':
+      ty=Math.sin(f*0.028+i*1.3)*18; tx=Math.cos(f*0.022+i)*8;
       break;
     case 'rotar':
-      r = f * 0.9;
+      r=f*1.1; op=interpolate(f-delay,[0,8],[0,1],CL);
       break;
     case 'girar-lento':
-      r = f * 0.25;
+      r=f*0.3;
       break;
     case 'manecilla':
-      r = f * 4.5;
+      r=f*4.8;
       break;
     case 'pulso':
-      s = 1 + Math.sin(f * 0.13) * 0.06;
-      op = op * (0.7 + 0.3 * (Math.sin(f * 0.13) * 0.5 + 0.5));
+      sc=1+Math.sin(f*0.14)*0.07;
+      op=op*(0.65+0.35*(Math.sin(f*0.14)*0.5+0.5));
+      break;
+    case 'pulso-lento':
+      sc=1+Math.sin(f*0.07)*0.04;
+      op=op*(0.7+0.3*(Math.sin(f*0.07)*0.5+0.5));
       break;
     case 'deslizar-izq':
-      tx = interpolate(ent, [0, 1], [-650, 0]);
+      tx=interpolate(s1,[0,1],[-750,0]); op=interpolate(f-delay,[0,6],[0,1],CL);
       break;
     case 'deslizar-der':
-      tx = interpolate(ent, [0, 1], [650, 0]);
+      tx=interpolate(s1,[0,1],[750,0]); op=interpolate(f-delay,[0,6],[0,1],CL);
+      break;
+    case 'deslizar-arriba':
+      ty=interpolate(s1,[0,1],[-700,0]); op=interpolate(f-delay,[0,6],[0,1],CL);
       break;
     case 'caer':
-      ty = interpolate(ent, [0, 1], [-800, 0]);
+      ty=interpolate(s1,[0,1],[-900,0]); op=interpolate(f-delay,[0,5],[0,1],CL);
       break;
     case 'subir':
-      ty = interpolate(ent, [0, 1], [800, 0]);
+      ty=interpolate(s1,[0,1],[900,0]) + Math.sin(f*0.05)*8;
+      op=interpolate(f-delay,[0,5],[0,1],CL);
       break;
     case 'particulas':
-      ty = -f * 1.1;
-      tx = Math.sin(f * 0.03 + i) * 25;
+      ty=-f*1.3; tx=Math.sin(f*0.04+i*1.4)*30; op=interpolate(f-delay,[0,6],[0,0.9],CL);
       break;
     case 'trazar':
-      trazo = interpolate(f - retraso, [0, 50], [0, 1], { ...CL, easing: Easing.out(Easing.cubic) });
+      trazo=interpolate(f-delay,[0,55],[0,1],EO(Easing.out(Easing.cubic)));
+      op=interpolate(f-delay,[0,8],[0,1],CL);
+      break;
+    case 'parpadeo':
+      op=(Math.round(Math.sin(f*0.5)*0.5+0.5))*interpolate(f-delay,[0,8],[0,1],CL);
+      break;
+    case 'ondear':
+      ty=Math.sin(f*0.08)*35; r=Math.sin(f*0.06)*3;
+      break;
+    case 'zoom-out':
+      sc=interpolate(p,[0,1],[1.5,1.0]); op=interpolate(f-delay,[0,10],[0,1],CL);
       break;
     default:
-      s = interpolate(ent, [0, 1], [0.9, 1]);
+      sc=interpolate(s1,[0,1],[0.88,1]);
   }
-  return { tx, ty, s, r, op, trazo };
+  return { tx, ty, sc, r, op, trazo };
 };
 
+const leer = (svg, attr, def) => { const m=String(svg||'').match(new RegExp(attr+'="([^"]*)"')); return m?m[1]:def; };
+const capasDe = d => Array.isArray(d.capas)&&d.capas.length ? d.capas : d.svg ? [d.svg] : [];
+
 const Capa = ({ svg, f, fps, dur, i }) => {
-  const tipo = leerAttr(svg, 'data-anim', i === 0 ? 'fondo' : 'principal');
-  const origen = leerAttr(svg, 'data-origen', '540 960').split(/\s+/).map(Number);
-  const a = animar(tipo, f, fps, dur, i);
+  const tipo = leer(svg,'data-anim', i===0?'fondo':'principal');
+  const origen = leer(svg,'data-origen','540 960').split(/\s+/).map(Number);
+  const a = mover(tipo, f, fps, dur, i);
   return (
-    <div
-      className={tipo === 'trazar' ? 'capa-trazar' : undefined}
-      style={{
-        position: 'absolute', left: 0, top: 0, width: 1080, height: 1920,
-        transform: `translate(${a.tx}px, ${a.ty}px) rotate(${a.r}deg) scale(${a.s})`,
-        transformOrigin: `${origen[0] || 540}px ${origen[1] || 960}px`,
-        opacity: a.op,
-        '--p': a.trazo,
-      }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <div style={{
+      position:'absolute', left:0, top:0, width:1080, height:1920,
+      transform:`translate(${a.tx}px,${a.ty}px) rotate(${a.r}deg) scale(${a.sc})`,
+      transformOrigin:`${origen[0]||540}px ${origen[1]||960}px`,
+      opacity: a.op,
+      '--p': a.trazo,
+    }} dangerouslySetInnerHTML={{ __html: svg }} />
   );
 };
 
-// ─── Cámara por escena ────────────────────────────────────────────────────
-const Camara = ({ tipo, f, dur, children }) => {
-  const p = interpolate(f, [0, Math.max(1, dur)], [0, 1], { ...CL, easing: Easing.inOut(Easing.cubic) });
-  let s = 1, tx = 0, ty = 0;
-  switch (tipo) {
+// ─── Cámara cinematográfica ───────────────────────────────────────────────
+const Camara = ({ tipo, f, fps, dur, children }) => {
+  const p = interpolate(f,[0,Math.max(1,dur)],[0,1],EO(Easing.inOut(Easing.sine)));
+  const s1 = spr(f, fps, 0, {damping:40,stiffness:30});
+  let sc=1, tx=0, ty=0, r=0;
+  switch(tipo) {
     case 'alejar':
-      s = interpolate(f, [0, 45], [1.35, 1.04], { ...CL, easing: Easing.out(Easing.cubic) }) * interpolate(p, [0, 1], [1, 1.05]);
+      sc=interpolate(f,[0,50],[1.5,1.05],EO(Easing.out(Easing.cubic))) * interpolate(p,[0,1],[1,1.06]);
+      break;
+    case 'acercar':
+      sc=interpolate(p,[0,0.6,1],[1.0,1.18,1.14],EO(Easing.inOut(Easing.cubic)));
+      ty=interpolate(p,[0,1],[0,-60]);
       break;
     case 'paneo-arriba':
-      s = 1.12; ty = interpolate(p, [0, 1], [110, -110]);
+      sc=1.14; ty=interpolate(p,[0,1],[130,-130]);
+      break;
+    case 'paneo-abajo':
+      sc=1.14; ty=interpolate(p,[0,1],[-130,130]);
       break;
     case 'paneo-lado':
-      s = 1.12; tx = interpolate(p, [0, 1], [-70, 70]);
+      sc=1.14; tx=interpolate(p,[0,1],[-80,80]);
+      break;
+    case 'paneo-diagonal':
+      sc=1.18; tx=interpolate(p,[0,1],[-70,70]); ty=interpolate(p,[0,1],[90,-90]);
+      break;
+    case 'orbita':
+      sc=1.1;
+      tx=Math.sin(f*0.025)*55;
+      ty=Math.cos(f*0.018)*35;
+      break;
+    case 'zoom-reverso':
+      sc=interpolate(p,[0,1],[1.0,1.4]); ty=interpolate(p,[0,1],[0,80]);
+      break;
+    case 'shake':
+      tx=f<20?Math.sin(f*3.5)*interpolate(f,[0,20],[14,0],CL):0;
+      ty=f<20?Math.cos(f*2.8)*interpolate(f,[0,20],[8,0],CL):0;
+      sc=interpolate(p,[0,1],[1.0,1.1]);
       break;
     default:
-      s = interpolate(p, [0, 1], [1.0, 1.14]);
-      ty = interpolate(p, [0, 1], [0, -30]);
+      sc=interpolate(p,[0,1],[1.0,1.1]);
   }
   return (
-    <AbsoluteFill style={{ transform: `translate(${tx}px, ${ty}px) scale(${s})`, transformOrigin: '540px 800px' }}>
+    <AbsoluteFill style={{ transform:`translate(${tx}px,${ty}px) rotate(${r}deg) scale(${sc})`, transformOrigin:'540px 850px', overflow:'hidden' }}>
       {children}
     </AbsoluteFill>
   );
 };
 
-const Ilustracion = ({ d, f, fps, dur, camaraDef }) => {
+const Ilustracion = ({ d, f, fps, dur, camaraDef='acercar' }) => {
   const capas = capasDe(d);
   if (!capas.length) return null;
   return (
-    <Camara tipo={d.camara || camaraDef} f={f} dur={dur}>
-      {capas.map((svg, i) => <Capa key={i} svg={svg} f={f} fps={fps} dur={dur} i={i} />)}
+    <Camara tipo={d.camara||camaraDef} f={f} fps={fps} dur={dur}>
+      {capas.map((svg,i) => <Capa key={i} svg={svg} f={f} fps={fps} dur={dur} i={i} />)}
     </Camara>
   );
 };
 
-// ─── Texto ────────────────────────────────────────────────────────────────
-const entra = (f, fps, delay = 0, dist = 70) => {
-  const s = spring({ frame: Math.max(0, f - delay), fps, config: { damping: 16, stiffness: 90 } });
-  return {
-    opacity: interpolate(f - delay, [0, 6], [0, 1], CL),
-    transform: `translateY(${interpolate(s, [0, 1], [dist, 0])}px)`,
-  };
+// ─── Texto y UI ───────────────────────────────────────────────────────────
+const entra = (f, fps, delay=0, dist=70, cfg={damping:14,stiffness:85}) => {
+  const s = spr(f, fps, delay, cfg);
+  return { opacity:interpolate(f-delay,[0,7],[0,1],CL), transform:`translateY(${interpolate(s,[0,1],[dist,0])}px)` };
+};
+const entX = (f, fps, delay=0, dist=90) => {
+  const s = spr(f, fps, delay, {damping:14,stiffness:85});
+  return { opacity:interpolate(f-delay,[0,7],[0,1],CL), transform:`translateX(${interpolate(s,[0,1],[dist,0])}px)` };
 };
 
 const Resaltar = ({ texto, resaltado, color }) => {
-  const t = String(texto || '');
-  const r = String(resaltado || '');
-  const i = r ? t.toLowerCase().indexOf(r.toLowerCase()) : -1;
-  if (i < 0) return <>{t}</>;
-  return (
-    <>
-      {t.slice(0, i)}
-      <span style={{ color, textShadow: `0 0 40px ${color}88` }}>{t.slice(i, i + r.length)}</span>
-      {t.slice(i + r.length)}
-    </>
-  );
+  const t=String(texto||''), r=String(resaltado||'');
+  const i=r?t.toLowerCase().indexOf(r.toLowerCase()):-1;
+  if(i<0) return <>{t}</>;
+  return <>{t.slice(0,i)}<span style={{color,textShadow:`0 0 50px ${color}99`}}>{t.slice(i,i+r.length)}</span>{t.slice(i+r.length)}</>;
 };
 
-const Etiqueta = ({ f, texto, color }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 26, opacity: interpolate(f, [0, 8], [0, 1], CL) }}>
-    <div style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: color, boxShadow: `0 0 16px ${color}` }} />
-    <span style={{ fontFamily: CONDENSED, fontWeight: 700, fontSize: 30, letterSpacing: 7, textTransform: 'uppercase', color }}>{texto}</span>
-  </div>
+const Overlay = () => (
+  <div style={{
+    position:'absolute', left:0, right:0, bottom:0, height:1100,
+    background:'linear-gradient(180deg,rgba(10,10,10,0) 0%,rgba(10,10,10,0.75) 40%,rgba(10,10,10,0.97) 100%)',
+    zIndex:5,
+  }}/>
 );
 
 const BloqueTexto = ({ children }) => (
   <>
-    <div style={{
-      position: 'absolute', left: 0, right: 0, bottom: 0, height: 1050,
-      background: 'linear-gradient(180deg, rgba(10,10,10,0) 0%, rgba(10,10,10,0.82) 45%, rgba(10,10,10,0.96) 100%)',
-      zIndex: 5,
-    }} />
-    <div style={{ position: 'absolute', left: 80, right: 180, bottom: 420, zIndex: 10 }}>
-      {children}
-    </div>
+    <Overlay/>
+    <div style={{ position:'absolute', left:80, right:80, bottom:380, zIndex:10 }}>{children}</div>
   </>
 );
 
-const contar = (f, delay, valor, dur = 40) => {
-  const v = Number(valor) || 0;
-  const p = interpolate(f - delay, [0, dur], [0, 1], { ...CL, easing: Easing.out(Easing.cubic) });
-  const n = v * p;
-  return v >= 1000 ? Math.round(n).toLocaleString('es-CO') : (Number.isInteger(v) ? Math.round(n) : n.toFixed(1));
-};
-
 const Marca = ({ f }) => (
-  <img
-    src={`data:image/svg+xml;base64,${LOGO_B64}`}
-    style={{ position: 'absolute', left: 796, top: 1558, width: 75, zIndex: 20, filter: 'brightness(0) invert(1)', opacity: interpolate(f, [0, 10], [0, 0.9], CL) }}
-  />
+  <img src={`data:image/svg+xml;base64,${LOGO_B64}`} style={{
+    position:'absolute', left:796, top:1558, width:75, zIndex:20,
+    filter:'brightness(0) invert(1)',
+    opacity:interpolate(f,[0,12],[0,0.9],CL),
+  }}/>
 );
 
-const TITULO = { fontFamily: ROBOTO, fontWeight: 900, color: C.blanco, lineHeight: 1.02, letterSpacing: -2, textShadow: '0 4px 30px rgba(0,0,0,0.9)' };
+const BarraProgreso = ({ f, dur }) => (
+  <div style={{
+    position:'absolute', bottom:0, left:0, zIndex:60, height:5,
+    width:interpolate(f,[0,Math.max(1,dur)],[0,1080],CL),
+    background:`linear-gradient(90deg,${C.rojo},#ff6b6b)`,
+  }}/>
+);
+
+const contar = (f, delay, valor, dur=42) => {
+  const v=Number(valor)||0;
+  const p=interpolate(f-delay,[0,dur],[0,1],EO(Easing.out(Easing.cubic)));
+  const n=v*Math.max(0,Math.min(1,p));
+  return v>=1000?Math.round(n).toLocaleString('es-CO'):Number.isInteger(v)?Math.round(n):n.toFixed(1);
+};
+
+const TITULO = { fontFamily:ROBOTO, fontWeight:900, color:C.blanco, lineHeight:1.0, letterSpacing:-2, textShadow:'0 3px 25px rgba(0,0,0,0.95)' };
 
 // ─── Escenas ──────────────────────────────────────────────────────────────
 const Gancho = ({ d, f, fps, dur }) => {
-  const lineas = (Array.isArray(d.lineas) ? d.lineas : String(d.texto || '').split('\n')).filter(Boolean).slice(0, 3);
-  const acento = d.color_acento || C.naranja;
-  const flash = 0; // flash eliminado
-  const sacudida = f < 8 ? Math.sin(f * 2.2) * interpolate(f, [0, 8], [4, 0], CL) : 0;
+  const lineas=(Array.isArray(d.lineas)?d.lineas:String(d.texto||'').split('\n')).filter(Boolean).slice(0,3);
+  const acento=d.color_acento||C.naranja;
+  const sacudida=f<10?Math.sin(f*2.4)*interpolate(f,[0,10],[8,0],CL):0;
   return (
-    <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro, transform: `translateX(${sacudida}px)` }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="alejar" />
+    <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro, transform:`translateX(${sacudida}px)` }}>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="alejar"/>
       <BloqueTexto>
-        {lineas.map((l, i) => {
-          const ultima = i === lineas.length - 1 && lineas.length > 1;
+        {lineas.map((l,i) => {
+          const ultima=i===lineas.length-1&&lineas.length>1;
+          const accentLine=i===1;
           return (
-            <div key={i} style={{ ...entra(f, fps, 10 + i * 9), marginBottom: 8 }}>
+            <div key={i} style={{...entra(f,fps,8+i*10), marginBottom:6}}>
               <span style={{
-                ...TITULO, fontSize: 108,
-                display: 'inline-block',
-                color: ultima ? C.negro : i === 1 ? C.verde : C.blanco,
-                backgroundColor: ultima ? acento : 'transparent',
-                padding: ultima ? '2px 18px 8px' : 0,
-                textShadow: ultima ? 'none' : TITULO.textShadow,
+                ...TITULO, fontSize:112, display:'inline-block',
+                color:ultima?C.negro:accentLine?C.verde:C.blanco,
+                backgroundColor:ultima?acento:'transparent',
+                padding:ultima?'4px 22px 10px':0,
+                textShadow:ultima?'none':TITULO.textShadow,
               }}>{l}</span>
             </div>
           );
         })}
+        <div style={{
+          marginTop:20, height:4,
+          width:interpolate(Math.max(0,f-24),[0,28],[0,420],EO(Easing.out(Easing.cubic))),
+          background:`linear-gradient(90deg,${acento},${C.verde})`,
+          borderRadius:2,
+        }}/>
       </BloqueTexto>
-
-      <Marca f={f} />
+      <BarraProgreso f={f} dur={dur}/>
+      <Marca f={f}/>
     </AbsoluteFill>
   );
 };
 
 const Contexto = ({ d, f, fps, dur }) => {
-  const cifras = Array.isArray(d.cifras) ? d.cifras.slice(0, 2) : [];
-  const colores = [C.naranja, C.verde];
+  const cifras=Array.isArray(d.cifras)?d.cifras.slice(0,2):[];
+  const cols=[C.naranja,C.verde];
   return (
-    <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-arriba" />
+    <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro }}>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-arriba"/>
       <BloqueTexto>
-        <div style={{ ...entra(f, fps, 8), ...TITULO, fontSize: 68, marginBottom: 36 }}>{d.titulo}</div>
-        {cifras.length ? (
-          <div style={{ display: 'flex', gap: 50 }}>
-            {cifras.map((c, i) => (
-              <div key={i} style={{ ...entra(f, fps, 20 + i * 14), flex: 1 }}>
-                <div style={{ fontFamily: CONDENSED, fontWeight: 900, fontSize: cifras.length === 1 ? 190 : 140, lineHeight: 0.95, color: colores[i], textShadow: `0 0 50px ${colores[i]}66` }}>
-                  {contar(f, 20 + i * 14, c.valor)}<span style={{ fontSize: 64 }}>{c.sufijo || ''}</span>
+        <div style={{...entra(f,fps,6), ...TITULO, fontSize:66, marginBottom:32}}>{d.titulo}</div>
+        {cifras.length?(
+          <div style={{display:'flex',gap:50}}>
+            {cifras.map((c,i)=>(
+              <div key={i} style={{...entra(f,fps,18+i*16),flex:1}}>
+                <div style={{fontFamily:CONDENSED,fontWeight:900,fontSize:cifras.length===1?200:148,lineHeight:0.9,color:cols[i],textShadow:`0 0 60px ${cols[i]}77`}}>
+                  {contar(f,18+i*16,c.valor)}<span style={{fontSize:70}}>{c.sufijo||''}</span>
                 </div>
-                <div style={{ fontFamily: ROBOTO, fontWeight: 700, fontSize: 36, color: C.gris, lineHeight: 1.2, marginTop: 10 }}>{c.etiqueta}</div>
+                <div style={{fontFamily:ROBOTO,fontWeight:700,fontSize:38,color:C.gris,lineHeight:1.2,marginTop:12}}>{c.etiqueta}</div>
               </div>
             ))}
           </div>
-        ) : (
-          <div style={{ ...entra(f, fps, 18), fontFamily: ROBOTO, fontWeight: 700, fontSize: 50, color: C.gris, lineHeight: 1.25 }}>{d.texto}</div>
+        ):(
+          <div style={{...entra(f,fps,16),fontFamily:ROBOTO,fontWeight:700,fontSize:52,color:C.gris,lineHeight:1.3}}>{d.texto}</div>
         )}
       </BloqueTexto>
-      <Marca f={f} />
+      <BarraProgreso f={f} dur={dur}/>
+      <Marca f={f}/>
     </AbsoluteFill>
   );
 };
 
 const Dato = ({ d, f, fps, dur }) => {
-  const pasos = Array.isArray(d.pasos) ? d.pasos.slice(0, 2) : [];
+  const pasos=Array.isArray(d.pasos)?d.pasos.slice(0,2):[];
   return (
-    <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="acercar" />
+    <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro }}>
+      <div style={{position:'absolute',left:0,top:0,bottom:0,width:7,background:`linear-gradient(180deg,${C.verde},${C.verde}00)`,opacity:interpolate(f,[0,18],[0,1],CL)}}/>
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="paneo-diagonal"/>
       <BloqueTexto>
-        <div style={{ ...entra(f, fps, 8), ...TITULO, fontSize: 84, marginBottom: 30 }}>
-          {String(d.titulo || '').split('\n').map((l, i) => (
-            <div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde} /></div>
-          ))}
+        <div style={{...entra(f,fps,6),...TITULO,fontSize:86,marginBottom:28}}>
+          {String(d.titulo||'').split('\n').map((l,i)=><div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde}/></div>)}
         </div>
-        {pasos.map((p, i) => (
-          <div key={i} style={{ ...entra(f, fps, 26 + i * 12, 40), display: 'flex', alignItems: 'center', gap: 18, marginBottom: 14 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: C.verde, boxShadow: `0 0 18px ${C.verde}`, flexShrink: 0 }} />
-            <div style={{ fontFamily: ROBOTO, fontWeight: 700, fontSize: 42, color: C.blanco, lineHeight: 1.15 }}>
-              {p.nombre ? <span style={{ color: C.verde }}>{p.nombre} </span> : null}{p.texto || ''}
+        {pasos.map((p,i)=>(
+          <div key={i} style={{...entX(f,fps,22+i*14,60),display:'flex',alignItems:'center',gap:20,marginBottom:16}}>
+            <div style={{width:14,height:14,borderRadius:7,backgroundColor:C.verde,boxShadow:`0 0 20px ${C.verde}`,flexShrink:0}}/>
+            <div style={{fontFamily:ROBOTO,fontWeight:700,fontSize:44,color:C.blanco,lineHeight:1.15}}>
+              {p.nombre?<span style={{color:C.verde}}>{p.nombre} </span>:null}{p.texto||String(p)}
             </div>
           </div>
         ))}
       </BloqueTexto>
-      <Marca f={f} />
+      <BarraProgreso f={f} dur={dur}/>
+      <Marca f={f}/>
     </AbsoluteFill>
   );
 };
 
 const Impacto = ({ d, f, fps, dur }) => {
-  const hay = d.numero !== undefined && d.numero !== null && d.numero !== '';
-  const s = spring({ frame: Math.max(0, f - 14), fps, config: { damping: 11, stiffness: 120 } });
+  const hay=d.numero!==undefined&&d.numero!==null&&d.numero!=='';
+  const s1=spr(f,fps,12,{damping:9,stiffness:130});
   return (
-    <AbsoluteFill style={{ backgroundColor: d.color_fondo || C.negro }}>
-      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="acercar" />
+    <AbsoluteFill style={{ backgroundColor:d.color_fondo||C.negro }}>
+      {hay&&(
+        <div style={{
+          position:'absolute',top:'25%',left:'50%',transform:'translate(-50%,-50%)',
+          width:700,height:700,borderRadius:'50%',
+          background:`radial-gradient(circle,${C.lima}22 0%,transparent 70%)`,
+          opacity:interpolate(f,[10,30],[0,1],CL),
+        }}/>
+      )}
+      <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="orbita"/>
       <BloqueTexto>
-        {d.titulo ? <div style={{ ...entra(f, fps, 6), fontFamily: ROBOTO, fontWeight: 700, fontSize: 46, color: C.gris, marginBottom: 10 }}>{d.titulo}</div> : null}
-        {hay ? (
-          <div style={{
-            fontFamily: CONDENSED, fontWeight: 900, fontSize: 280, lineHeight: 0.9, color: C.lima,
-            transform: `scale(${interpolate(s, [0, 1], [0.4, 1])})`, transformOrigin: 'left center',
-            opacity: interpolate(f - 14, [0, 6], [0, 1], CL), textShadow: `0 0 90px ${C.lima}77`, marginBottom: 16,
-          }}>
-            {contar(f, 16, d.numero, 45)}{d.sufijo || ''}
-          </div>
-        ) : null}
-        <div style={{ ...entra(f, fps, hay ? 40 : 14), fontFamily: ROBOTO, fontWeight: 900, fontSize: hay ? 52 : 74, color: C.blanco, lineHeight: 1.12 }}>
-          <Resaltar texto={d.texto} resaltado={d.resaltado} color={C.lima} />
+        {d.titulo?<div style={{...entra(f,fps,4),fontFamily:ROBOTO,fontWeight:700,fontSize:46,color:C.gris,marginBottom:12}}>{d.titulo}</div>:null}
+        {hay?(
+          <>
+            <div style={{
+              fontFamily:CONDENSED,fontWeight:900,fontSize:300,lineHeight:0.88,color:C.lima,
+              transform:`scale(${interpolate(s1,[0,1],[0.35,1])})`,transformOrigin:'left center',
+              opacity:interpolate(f-12,[0,6],[0,1],CL),textShadow:`0 0 100px ${C.lima}88`,marginBottom:20,
+            }}>
+              {contar(f,14,d.numero,48)}{d.sufijo||''}
+            </div>
+            <div style={{height:5,width:interpolate(Math.max(0,f-50),[0,22],[0,340],EO(Easing.out(Easing.cubic))),background:`linear-gradient(90deg,${C.lima},transparent)`,marginBottom:28,borderRadius:3}}/>
+          </>
+        ):null}
+        <div style={{...entra(f,fps,hay?55:12),fontFamily:ROBOTO,fontWeight:900,fontSize:hay?52:76,color:C.blanco,lineHeight:1.12}}>
+          <Resaltar texto={d.texto} resaltado={d.resaltado} color={C.lima}/>
         </div>
       </BloqueTexto>
-      <Marca f={f} />
+      <BarraProgreso f={f} dur={dur}/>
+      <Marca f={f}/>
     </AbsoluteFill>
   );
 };
 
 const Cierre = ({ d, f, fps, dur }) => (
-  <AbsoluteFill style={{ backgroundColor: C.negro }}>
-    <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="acercar" />
-    <AbsoluteFill style={{ background: 'radial-gradient(ellipse at 50% 55%, rgba(10,10,10,0.35) 0%, rgba(10,10,10,0.85) 70%)', zIndex: 5 }} />
-    <AbsoluteFill style={{ zIndex: 10, alignItems: 'center', justifyContent: 'center', padding: '280px 120px 350px', textAlign: 'center' }}>
-      <div style={{ ...entra(f, fps, 6), ...TITULO, fontSize: 92, marginBottom: 70 }}>
-        {String(d.titulo || '').split('\n').map((l, i) => (
-          <div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde} /></div>
-        ))}
+  <AbsoluteFill style={{ backgroundColor:C.negro }}>
+    <Ilustracion d={d} f={f} fps={fps} dur={dur} camaraDef="zoom-reverso"/>
+    <AbsoluteFill style={{background:'radial-gradient(ellipse at 50% 55%,rgba(10,10,10,0.3) 0%,rgba(10,10,10,0.88) 70%)',zIndex:5}}/>
+    <AbsoluteFill style={{zIndex:10,alignItems:'center',justifyContent:'center',padding:'300px 110px 350px',textAlign:'center'}}>
+      <div style={{...entra(f,fps,4),...TITULO,fontSize:94,marginBottom:80}}>
+        {String(d.titulo||'').split('\n').map((l,i)=><div key={i}><Resaltar texto={l} resaltado={d.resaltado} color={C.verde}/></div>)}
       </div>
-      <img
-        src={`data:image/svg+xml;base64,${LOGO_B64}`}
-        style={{
-          width: 150, filter: 'brightness(0) invert(1)',
-          opacity: interpolate(f, [28, 50], [0, 1], CL),
-          transform: `scale(${interpolate(f, [28, 90], [1.035, 1], CL)})`,
-        }}
-      />
+      <img src={`data:image/svg+xml;base64,${LOGO_B64}`} style={{
+        width:150,filter:'brightness(0) invert(1)',
+        opacity:interpolate(f,[30,55],[0,1],CL),
+        transform:`scale(${interpolate(f,[30,100],[1.04,1],CL)})`,
+      }}/>
     </AbsoluteFill>
+    <BarraProgreso f={f} dur={dur}/>
   </AbsoluteFill>
 );
 
-// ─── Transición: barrido de color ─────────────────────────────────────────
+// ─── Transición: barrido diagonal ─────────────────────────────────────────
 const Barrido = ({ f, color }) => {
-  const y = interpolate(f, [0, 18], [1920, -1920], { ...CL, easing: Easing.inOut(Easing.cubic) });
+  const p = interpolate(f,[0,22],[-1,2.2],EO(Easing.inOut(Easing.cubic)));
   return (
-    <AbsoluteFill style={{ zIndex: 50, pointerEvents: 'none' }}>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: y, height: 1920, background: `linear-gradient(180deg, ${color}00 0%, ${color} 18%, ${color} 82%, ${color}00 100%)` }} />
+    <AbsoluteFill style={{zIndex:50,pointerEvents:'none',overflow:'hidden'}}>
+      <div style={{
+        position:'absolute',left:0,right:0,top:0,bottom:0,
+        background:`linear-gradient(135deg,transparent ${(p-0.25)*100}%,${color} ${p*100}%,${color} ${(p+0.08)*100}%,transparent ${(p+0.33)*100}%)`,
+      }}/>
     </AbsoluteFill>
   );
 };
 
-const ESTILO_GLOBAL = `
-.capa-trazar path, .capa-trazar line, .capa-trazar polyline, .capa-trazar polygon, .capa-trazar circle, .capa-trazar ellipse, .capa-trazar rect {
-  stroke-dasharray: 4000;
-  stroke-dashoffset: calc((1 - var(--p)) * 4000px);
-}
-`;
+const ESTILOS = `
+.capa-trazar path,.capa-trazar line,.capa-trazar polyline,.capa-trazar polygon,.capa-trazar circle,.capa-trazar ellipse,.capa-trazar rect {
+  stroke-dasharray:4000; stroke-dashoffset:calc((1 - var(--p,0)) * 4000px);
+}`;
 
 // ─── Principal ────────────────────────────────────────────────────────────
 export const EEVideo = ({ audioUrl, escenas, tiempos }) => {
   const { durationInFrames, fps } = useVideoConfig();
   const frame = useCurrentFrame();
-  const e = escenas && typeof escenas === 'object' && !Array.isArray(escenas) ? escenas : {};
+  const e = escenas&&typeof escenas==='object'&&!Array.isArray(escenas) ? escenas : {};
 
-  const t = Array.isArray(tiempos) ? tiempos.map(Number) : [];
+  const t = Array.isArray(tiempos)?tiempos.map(Number):[];
   let inicios;
-  if (t.length === 5 && t.every((x) => !isNaN(x))) {
-    inicios = t.map((x) => Math.max(0, Math.round(x * fps)));
-    inicios[0] = 0;
+  if(t.length===5&&t.every(x=>!isNaN(x))) {
+    inicios=t.map(x=>Math.max(0,Math.round(x*fps))); inicios[0]=0;
   } else {
-    const k = durationInFrames / 900;
-    inicios = [0, 160, 380, 580, 780].map((n) => Math.round(n * k));
+    const k=durationInFrames/900;
+    inicios=[0,160,380,580,780].map(n=>Math.round(n*k));
   }
-  const dur = (i) => (i < 4 ? inicios[i + 1] + 8 : durationInFrames) - inicios[i];
+  const dur=i=>(i<4?inicios[i+1]+8:durationInFrames)-inicios[i];
 
-  const comps = [Gancho, Contexto, Dato, Impacto, Cierre];
-  const claves = ['gancho', 'contexto', 'dato', 'impacto', 'cierre'];
-  const coloresBarrido = [C.naranja, C.verde, C.lima, C.naranja];
+  const comps=[Gancho,Contexto,Dato,Impacto,Cierre];
+  const claves=['gancho','contexto','dato','impacto','cierre'];
+  const colsBarrido=[C.naranja,C.verde,C.lima,C.naranja];
 
   return (
-    <AbsoluteFill style={{ backgroundColor: C.negro, fontFamily: ROBOTO }}>
-      <style>{ESTILO_GLOBAL}</style>
-      {audioUrl ? <Audio src={audioUrl} /> : null}
-      {comps.map((Comp, i) => (
-        <Sequence key={`e${i}`} from={inicios[i]} durationInFrames={Math.max(1, dur(i))}>
-          <Comp d={e[claves[i]] || {}} f={frame - inicios[i]} fps={fps} dur={Math.max(1, dur(i))} />
+    <AbsoluteFill style={{backgroundColor:C.negro,fontFamily:ROBOTO}}>
+      <style>{ESTILOS}</style>
+      {audioUrl?<Audio src={audioUrl}/>:null}
+      {comps.map((Comp,i)=>(
+        <Sequence key={`e${i}`} from={inicios[i]} durationInFrames={Math.max(1,dur(i))}>
+          <Comp d={e[claves[i]]||{}} f={frame-inicios[i]} fps={fps} dur={Math.max(1,dur(i))}/>
         </Sequence>
       ))}
-      {[1, 2, 3, 4].map((i) => (
-        <Sequence key={`b${i}`} from={Math.max(0, inicios[i] - 9)} durationInFrames={20}>
-          <Barrido f={frame - Math.max(0, inicios[i] - 9)} color={coloresBarrido[i - 1]} />
+      {[1,2,3,4].map(i=>(
+        <Sequence key={`b${i}`} from={Math.max(0,inicios[i]-10)} durationInFrames={26}>
+          <Barrido f={frame-Math.max(0,inicios[i]-10)} color={colsBarrido[i-1]}/>
         </Sequence>
       ))}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, height: 8, zIndex: 60, backgroundColor: C.rojo,
-        width: interpolate(frame, [0, durationInFrames], [0, 1080], CL),
-      }} />
     </AbsoluteFill>
   );
 };
